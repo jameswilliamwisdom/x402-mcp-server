@@ -8,7 +8,7 @@
 
 | Phase | Name | Requirements | Status |
 |-------|------|-------------|--------|
-| 1 | Package Hardening + Input Validation | PKG-01..06, VAL-01..02 | Complete (2/2 plans) — 2026-03-09 |
+| 1 | Package Hardening + Input Validation | Complete    | 2026-03-09 |
 | 2 | npm Publish | NPM-01..02 | Pending |
 | 3 | Brand Site Build | SITE-01..04, DOCS-01..04, DEPLOY-01 | Pending |
 | 4 | Deployment | DEPLOY-02 | Pending |
@@ -21,7 +21,7 @@
 
 **Requirements covered:** PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06, VAL-01, VAL-02
 
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 01-01-PLAN.md — Package hardening: files whitelist, lifecycle scripts, engines, LICENSE, .gitignore, publint + zod deps (completed 2026-03-09)
