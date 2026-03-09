@@ -214,7 +214,7 @@ With a wallet key, any URL can be captured via the paid endpoint.
 
 Returns: base64 PNG/JPEG/WebP image data.`,
   {
-    url: z.string().describe("URL to capture (full URL including https://)"),
+    url: z.string().url().describe("URL to capture (full URL including https://)"),
     width: z
       .number()
       .int()
@@ -291,7 +291,7 @@ Without X402_PRIVATE_KEY, only the free test endpoint is available.
 
 Returns: extracted text, page count, and metadata.`,
   {
-    pdf_url: z.string().describe("URL of the PDF to extract text from"),
+    pdf_url: z.string().url().describe("URL of the PDF to extract text from"),
   },
   async (params) => {
     const base = APIS.pdf.baseUrl;
@@ -332,6 +332,7 @@ Returns: sentiment score (-1 to 1), confidence, sources, and analysis.`,
   {
     coin: z
       .string()
+      .regex(/^[A-Z0-9]{1,10}$/i)
       .describe(
         "Cryptocurrency ticker symbol (e.g., 'BTC', 'ETH', 'SOL')"
       ),
@@ -407,6 +408,7 @@ Returns: comprehensive analysis with market data, news, development activity, an
   {
     coin: z
       .string()
+      .regex(/^[A-Z0-9]{1,10}$/i)
       .describe(
         "Cryptocurrency ticker symbol (e.g., 'BTC', 'ETH', 'SOL')"
       ),
