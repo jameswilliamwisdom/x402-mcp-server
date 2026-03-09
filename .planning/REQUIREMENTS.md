@@ -18,8 +18,8 @@ Requirements for milestone v1.0 — Publish + Brand. Each maps to roadmap phases
 
 ### Input Validation
 
-- [ ] **VAL-01**: `coin` parameter validated with `/^[A-Z0-9]{1,10}$/i` regex
-- [ ] **VAL-02**: `url` and `pdf_url` parameters validated with `z.string().url()`
+- [x] **VAL-01**: `coin` parameter validated with `/^[A-Z0-9]{1,10}$/i` regex
+- [x] **VAL-02**: `url` and `pdf_url` parameters validated with `z.string().url()`
 
 ### npm Publish
 
@@ -84,8 +84,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PKG-04 | 1 — Package Hardening + Input Validation | Complete |
 | PKG-05 | 1 — Package Hardening + Input Validation | Complete |
 | PKG-06 | 1 — Package Hardening + Input Validation | Complete |
-| VAL-01 | 1 — Package Hardening + Input Validation | Pending |
-| VAL-02 | 1 — Package Hardening + Input Validation | Pending |
+| VAL-01 | 1 — Package Hardening + Input Validation | Complete |
+| VAL-02 | 1 — Package Hardening + Input Validation | Complete |
 | NPM-01 | 2 — npm Publish | Pending |
 | NPM-02 | 2 — npm Publish | Pending |
 | SITE-01 | 3 — Brand Site Build | Pending |

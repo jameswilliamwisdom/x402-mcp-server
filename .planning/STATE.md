@@ -2,20 +2,20 @@
 
 **Milestone:** v1.0 — npm Publish + Brand Site
 **Last updated:** 2026-03-09
-**Overall status:** Phase 1 in progress — Plan 01 complete, Plan 02 next
+**Overall status:** Phase 1 complete — all 8 requirements (PKG-01..06, VAL-01..02) satisfied. Ready for Phase 2.
 
 ## Phase Status
 
 | Phase | Name | Status | Blockers |
 |-------|------|--------|----------|
-| 1 | Package Hardening + Input Validation | In Progress (1/2 plans) | None |
-| 2 | npm Publish | Not started | Phase 1 |
+| 1 | Package Hardening + Input Validation | Complete (2/2 plans) | None |
+| 2 | npm Publish | Not started | Phase 1 ✓ |
 | 3 | Brand Site Build | Not started | Phase 2 |
 | 4 | Deployment | Not started | Phase 3 |
 
 ## Active Phase
 
-Phase 1 — Plan 01 complete. Next: Plan 02 (input validation).
+Phase 2 — npm Publish. Phase 1 complete.
 
 ## Completed
 
@@ -23,6 +23,7 @@ Phase 1 — Plan 01 complete. Next: Plan 02 (input validation).
 - [x] Requirements defined — 20 v1 requirements across 6 groups (2026-03-09)
 - [x] Roadmap created — 4 phases, 100% requirement coverage (2026-03-09)
 - [x] Phase 1 Plan 01: Package hardening — PKG-01..06 complete (2026-03-09)
+- [x] Phase 1 Plan 02: Input validation — VAL-01..02 complete (2026-03-09)
 
 ## Open Questions
 
@@ -58,4 +59,4 @@ See: `.planning/PROJECT.md` and `.planning/ROADMAP.md`
 ---
 
 *State initialized: 2026-03-09*
-*Last updated: 2026-03-09 — Phase 1 Plan 01 complete: package.json hardened (files whitelist, engines, lifecycle scripts, zod, publint), MIT LICENSE added, .gitignore expanded*
+*Last updated: 2026-03-09 — Phase 1 Plan 02 complete: Zod regex on coin params (injection protection), .url() on url/pdf_url params (URL validation). Phase 1 fully complete. Deferred: pkg.main vs pkg.exports suggestion from publint (cosmetic, post-v1).*
