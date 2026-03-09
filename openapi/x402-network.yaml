@@ -1,0 +1,340 @@
+openapi: 3.1.0
+info:
+  title: x402 API Network
+  description: |
+    Pay-per-use API network for AI agents with USDC micropayments on Base (L2 Ethereum).
+
+    ## Payment
+    All paid endpoints use the x402 protocol (HTTP 402). Include an `X-PAYMENT` header
+    with a signed payment payload. Use `x402-fetch` (npm) or `@x402/fetch` to handle
+    this automatically.
+
+    ## Free Test Endpoints
+    Every API has `/test/*` endpoints available without payment for evaluation.
+
+    ## MCP Server
+    Install the `x402-mcp-server` npm package to access all APIs as Claude Code tools.
+  version: 1.0.0
+  contact:
+    name: x402 API Network
+  license:
+    name: MIT
+  x-x402-network: base
+  x-x402-token: USDC
+  x-x402-wallet: "0x6b21227Ca9Bb3590BB62ff60BA0EFbBf9Ba22ACC"
+
+servers:
+  - url: https://usdc-screenshot-api-production.up.railway.app
+    description: Screenshot API
+  - url: https://pdf-api-production-cf1e.up.railway.app
+    description: PDF Extraction API
+  - url: https://crypto-sentiment-api-production-0ff4.up.railway.app
+    description: Crypto Intelligence API
+
+paths:
+  # ─── Screenshot API ────────────────────────────────────────────────
+  /screenshot:
+    get:
+      operationId: captureScreenshot
+      summary: Capture website screenshot
+      description: |
+        Capture a screenshot of any URL. Returns base64-encoded image data.
+        Supports PNG, JPEG, and WebP formats with configurable viewport.
+      tags: [Screenshot]
+      x-x402-price: "$0.01"
+      x-x402-server: https://usdc-screenshot-api-production.up.railway.app
+      parameters:
+        - name: url
+          in: query
+          required: true
+          description: Full URL to capture (including https://)
+          schema:
+            type: string
+            example: "https://example.com"
+        - name: width
+          in: query
+          schema:
+            type: integer
+            default: 1280
+            minimum: 320
+            maximum: 3840
+          description: Viewport width in pixels
+        - name: height
+          in: query
+          schema:
+            type: integer
+            default: 720
+            minimum: 240
+            maximum: 2160
+          description: Viewport height in pixels
+        - name: full_page
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Capture full scrollable page
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum: [png, jpeg, webp]
+            default: png
+          description: Image output format
+      responses:
+        "200":
+          description: Screenshot captured successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  url:
+                    type: string
+                  image_base64:
+                    type: string
+                    description: Base64-encoded image data
+                  format:
+                    type: string
+                  width:
+                    type: integer
+                  height:
+                    type: integer
+        "402":
+          description: Payment required — include X-PAYMENT header
+
+  /test/screenshot:
+    get:
+      operationId: testScreenshot
+      summary: Free test screenshot (limited domains)
+      description: |
+        Free test endpoint limited to example.com, example.org, and httpbin.org.
+        Use GET /screenshot with x402 payment for any URL.
+      tags: [Screenshot, Free]
+      parameters:
+        - name: url
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: width
+          in: query
+          schema:
+            type: integer
+            default: 1280
+        - name: height
+          in: query
+          schema:
+            type: integer
+            default: 720
+      responses:
+        "200":
+          description: Screenshot captured
+        "403":
+          description: Domain not allowed in free tier
+
+  # ─── PDF Extraction API ────────────────────────────────────────────
+  /extract:
+    post:
+      operationId: extractPdf
+      summary: Extract text from PDF
+      description: |
+        Upload a PDF and extract text content using PyMuPDF.
+        Supports optional OCR mode and image rendering.
+      tags: [PDF]
+      x-x402-price: "$0.01"
+      x-x402-server: https://pdf-api-production-cf1e.up.railway.app
+      parameters:
+        - name: ocr
+          in: query
+          schema:
+            type: string
+            default: "off"
+            enum: ["off", "on"]
+          description: Enable OCR for scanned PDFs
+        - name: render_images
+          in: query
+          schema:
+            type: boolean
+            default: false
+          description: Render pages as images (for Claude Vision)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF file to extract text from
+              required: [file]
+      responses:
+        "200":
+          description: Text extracted successfully
+        "402":
+          description: Payment required
+
+  /test/extract:
+    post:
+      operationId: testExtractPdf
+      summary: Free test PDF extraction (first 3 pages)
+      description: Extract text from the first 3 pages of a PDF (free, no payment).
+      tags: [PDF, Free]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+              required: [file]
+      responses:
+        "200":
+          description: Text extracted (limited to 3 pages)
+
+  # ─── Crypto Intelligence API ───────────────────────────────────────
+  /sentiment/{symbol}:
+    get:
+      operationId: getCoinSentiment
+      summary: AI sentiment analysis for a cryptocurrency
+      description: |
+        Get AI-powered sentiment analysis for a specific coin.
+        Analyzes social media, news, and market data.
+      tags: [Crypto]
+      x-x402-price: "$0.01"
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          description: Cryptocurrency ticker symbol
+          schema:
+            type: string
+            example: BTC
+      responses:
+        "200":
+          description: Sentiment analysis returned
+        "402":
+          description: Payment required
+
+  /sentiment/market:
+    get:
+      operationId: getMarketSentiment
+      summary: Broad crypto market sentiment overview
+      description: Get overall crypto market sentiment analysis across major coins.
+      tags: [Crypto]
+      x-x402-price: "$0.05"
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      responses:
+        "200":
+          description: Market sentiment overview returned
+        "402":
+          description: Payment required
+
+  /intelligence/{symbol}:
+    get:
+      operationId: getIntelligence
+      summary: Comprehensive multi-source crypto intelligence
+      description: |
+        Premium tier — aggregates CoinGecko market data, DeFiLlama TVL,
+        CryptoPanic news, Fear & Greed Index, and GitHub activity.
+        All synthesized by Claude AI for actionable insights.
+      tags: [Crypto]
+      x-x402-price: "$0.10"
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+            example: ETH
+      responses:
+        "200":
+          description: Intelligence report returned
+        "402":
+          description: Payment required
+
+  # ─── Free Data Endpoints (Crypto) ──────────────────────────────────
+  /data/market/{symbol}:
+    get:
+      operationId: getMarketData
+      summary: CoinGecko market data (free)
+      tags: [Crypto, Free]
+      x-x402-price: free
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Market data returned
+
+  /prices/{symbol}:
+    get:
+      operationId: getCoinPrices
+      summary: Real-time price data (free)
+      tags: [Crypto, Free]
+      x-x402-price: free
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Price data returned
+
+  /data/fear-greed:
+    get:
+      operationId: getFearGreed
+      summary: Crypto Fear & Greed Index (free)
+      tags: [Crypto, Free]
+      x-x402-price: free
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      responses:
+        "200":
+          description: Fear & Greed data returned
+
+  /data/news/{symbol}:
+    get:
+      operationId: getNewsData
+      summary: CryptoPanic news (free)
+      tags: [Crypto, Free]
+      x-x402-price: free
+      x-x402-server: https://crypto-sentiment-api-production-0ff4.up.railway.app
+      parameters:
+        - name: symbol
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: News data returned
+
+tags:
+  - name: Screenshot
+    description: Website screenshot capture ($0.01/capture)
+  - name: PDF
+    description: PDF text extraction ($0.01/extraction)
+  - name: Crypto
+    description: Cryptocurrency intelligence ($0.01-$0.10/query)
+  - name: Free
+    description: No payment required — available for testing and evaluation

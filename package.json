@@ -1,0 +1,35 @@
+{
+  "name": "x402-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for the x402 API Network — screenshot, PDF extraction, and crypto sentiment tools with USDC micropayments on Base",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "x402-mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "viem": "^2.0.0",
+    "x402-fetch": "^1.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "mcp",
+    "x402",
+    "usdc",
+    "base",
+    "micropayments",
+    "ai-agent",
+    "screenshot",
+    "pdf",
+    "crypto-sentiment"
+  ],
+  "license": "MIT"
+}
