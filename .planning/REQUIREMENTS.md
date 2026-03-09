@@ -9,12 +9,12 @@ Requirements for milestone v1.0 — Publish + Brand. Each maps to roadmap phases
 
 ### Package Hardening
 
-- [ ] **PKG-01**: `files` whitelist in package.json limits published content to `dist/`, `README.md`, `LICENSE`
-- [ ] **PKG-02**: `prepublishOnly` script runs `tsc` build before every publish
-- [ ] **PKG-03**: `engines` field declares Node 18+ requirement
-- [ ] **PKG-04**: LICENSE file exists on disk (MIT)
-- [ ] **PKG-05**: Shebang (`#!/usr/bin/env node`) preserved in `dist/index.js` after compilation
-- [ ] **PKG-06**: `publint` validates package exports before publish
+- [x] **PKG-01**: `files` whitelist in package.json limits published content to `dist/`, `README.md`, `LICENSE`
+- [x] **PKG-02**: `prepublishOnly` script runs `tsc` build before every publish
+- [x] **PKG-03**: `engines` field declares Node 18+ requirement
+- [x] **PKG-04**: LICENSE file exists on disk (MIT)
+- [x] **PKG-05**: Shebang (`#!/usr/bin/env node`) preserved in `dist/index.js` after compilation
+- [x] **PKG-06**: `publint` validates package exports before publish
 
 ### Input Validation
 
@@ -78,12 +78,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | 1 — Package Hardening + Input Validation | Pending |
-| PKG-02 | 1 — Package Hardening + Input Validation | Pending |
-| PKG-03 | 1 — Package Hardening + Input Validation | Pending |
-| PKG-04 | 1 — Package Hardening + Input Validation | Pending |
-| PKG-05 | 1 — Package Hardening + Input Validation | Pending |
-| PKG-06 | 1 — Package Hardening + Input Validation | Pending |
+| PKG-01 | 1 — Package Hardening + Input Validation | Complete |
+| PKG-02 | 1 — Package Hardening + Input Validation | Complete |
+| PKG-03 | 1 — Package Hardening + Input Validation | Complete |
+| PKG-04 | 1 — Package Hardening + Input Validation | Complete |
+| PKG-05 | 1 — Package Hardening + Input Validation | Complete |
+| PKG-06 | 1 — Package Hardening + Input Validation | Complete |
 | VAL-01 | 1 — Package Hardening + Input Validation | Pending |
 | VAL-02 | 1 — Package Hardening + Input Validation | Pending |
 | NPM-01 | 2 — npm Publish | Pending |
