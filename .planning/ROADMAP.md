@@ -21,19 +21,11 @@
 
 **Requirements covered:** PKG-01, PKG-02, PKG-03, PKG-04, PKG-05, PKG-06, VAL-01, VAL-02
 
-### Tasks
+**Plans:** 2 plans
 
-1. Add `"files": ["dist", "README.md", "LICENSE"]` to root `package.json`
-2. Add `"prepublishOnly": "npm run build"` script to root `package.json`
-3. Add `"engines": {"node": ">=18"}` to root `package.json`
-4. Create `LICENSE` file at repo root (MIT, copyright James Wisdom 2026)
-5. Verify shebang in `dist/index.js` after build — add `postbuild` script to inject `#!/usr/bin/env node` if `tsc` strips it: `node -e "const f='dist/index.js',s=require('fs'),c=s.readFileSync(f,'utf8');if(!c.startsWith('#!/'))s.writeFileSync(f,'#!/usr/bin/env node\n'+c)"`
-6. Install `publint` as a dev dependency: `npm install --save-dev publint`
-7. Add `coin` parameter regex validation in `src/index.ts`: `.regex(/^[A-Z0-9]{1,10}$/i)` on all `coin` Zod schemas
-8. Add URL validation in `src/index.ts`: `.url()` on all `url` and `pdf_url` Zod schemas
-9. Run `npm run build` and verify `head -1 dist/index.js` shows the shebang
-10. Run `npm pack --dry-run` and verify only `dist/`, `README.md`, `LICENSE`, `package.json` appear in the tarball
-11. Run `npx publint` and resolve any reported issues
+Plans:
+- [ ] 01-01-PLAN.md — Package hardening: files whitelist, lifecycle scripts, engines, LICENSE, .gitignore, publint + zod deps
+- [ ] 01-02-PLAN.md — Input validation: Zod schema tightening on coin/url/pdf_url params + full build & package verification
 
 ### Success Criteria
 
