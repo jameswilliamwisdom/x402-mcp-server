@@ -8,7 +8,7 @@
 
 | Phase | Name | Requirements | Status |
 |-------|------|-------------|--------|
-| 1 | Package Hardening + Input Validation | PKG-01..06, VAL-01..02 | Pending |
+| 1 | Package Hardening + Input Validation | PKG-01..06, VAL-01..02 | In Progress (1/2 plans) |
 | 2 | npm Publish | NPM-01..02 | Pending |
 | 3 | Brand Site Build | SITE-01..04, DOCS-01..04, DEPLOY-01 | Pending |
 | 4 | Deployment | DEPLOY-02 | Pending |
@@ -24,7 +24,7 @@
 **Plans:** 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Package hardening: files whitelist, lifecycle scripts, engines, LICENSE, .gitignore, publint + zod deps
+- [x] 01-01-PLAN.md — Package hardening: files whitelist, lifecycle scripts, engines, LICENSE, .gitignore, publint + zod deps (completed 2026-03-09)
 - [ ] 01-02-PLAN.md — Input validation: Zod schema tightening on coin/url/pdf_url params + full build & package verification
 
 ### Success Criteria
