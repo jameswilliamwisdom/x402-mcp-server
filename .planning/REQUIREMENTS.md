@@ -78,32 +78,32 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PKG-01 | — | Pending |
-| PKG-02 | — | Pending |
-| PKG-03 | — | Pending |
-| PKG-04 | — | Pending |
-| PKG-05 | — | Pending |
-| PKG-06 | — | Pending |
-| VAL-01 | — | Pending |
-| VAL-02 | — | Pending |
-| NPM-01 | — | Pending |
-| NPM-02 | — | Pending |
-| SITE-01 | — | Pending |
-| SITE-02 | — | Pending |
-| SITE-03 | — | Pending |
-| SITE-04 | — | Pending |
-| DOCS-01 | — | Pending |
-| DOCS-02 | — | Pending |
-| DOCS-03 | — | Pending |
-| DOCS-04 | — | Pending |
-| DEPLOY-01 | — | Pending |
-| DEPLOY-02 | — | Pending |
+| PKG-01 | 1 — Package Hardening + Input Validation | Pending |
+| PKG-02 | 1 — Package Hardening + Input Validation | Pending |
+| PKG-03 | 1 — Package Hardening + Input Validation | Pending |
+| PKG-04 | 1 — Package Hardening + Input Validation | Pending |
+| PKG-05 | 1 — Package Hardening + Input Validation | Pending |
+| PKG-06 | 1 — Package Hardening + Input Validation | Pending |
+| VAL-01 | 1 — Package Hardening + Input Validation | Pending |
+| VAL-02 | 1 — Package Hardening + Input Validation | Pending |
+| NPM-01 | 2 — npm Publish | Pending |
+| NPM-02 | 2 — npm Publish | Pending |
+| SITE-01 | 3 — Brand Site Build | Pending |
+| SITE-02 | 3 — Brand Site Build | Pending |
+| SITE-03 | 3 — Brand Site Build | Pending |
+| SITE-04 | 3 — Brand Site Build | Pending |
+| DOCS-01 | 3 — Brand Site Build | Pending |
+| DOCS-02 | 3 — Brand Site Build | Pending |
+| DOCS-03 | 3 — Brand Site Build | Pending |
+| DOCS-04 | 3 — Brand Site Build | Pending |
+| DEPLOY-01 | 3 — Brand Site Build | Pending |
+| DEPLOY-02 | 4 — Deployment | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0
-- Unmapped: 20 ⚠️
+- Mapped to phases: 20
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-09*
-*Last updated: 2026-03-09 after initial definition*
+*Last updated: 2026-03-09 — traceability table populated after roadmap creation*
