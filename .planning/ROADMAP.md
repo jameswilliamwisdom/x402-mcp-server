@@ -39,36 +39,23 @@ Plans:
 
 ## Phase 2: npm Publish
 
-**Goal:** Update the README with npm-based install instructions and publish the hardened package to the npm registry as `x402-mcp-server`. The published package is the prerequisite for writing accurate brand site content — the Getting Started guide cannot reference a real install command until the package exists.
+**Goal:** Prepare the package for GitHub direct install distribution, write a comprehensive README with all MCP client configs, create a public GitHub repo, and verify end-to-end install via `npx -y github:jameswilliamwisdom/x402-mcp-server`. npm registry publish deferred until account issues resolved.
 
 **Requirements covered:** NPM-01, NPM-02
 
 **Prerequisite:** Phase 1 complete
 
-### Tasks
+**Plans:** 1 plan
 
-1. Update `README.md` — replace any source-run instructions with npm install instructions:
-   - Installation: `npm install -g x402-mcp-server` or `npx -y x402-mcp-server`
-   - Claude Desktop config example using `"command": "npx", "args": ["-y", "x402-mcp-server"]`
-   - Free mode section (no wallet required — use test endpoints)
-   - Paid mode section (Base USDC wallet setup)
-2. Confirm npm account has 2FA enabled before publishing
-3. Run final pre-publish checklist:
-   - `npm run build` — clean build
-   - `head -1 dist/index.js` — shebang present
-   - `npm pack --dry-run` — verify tarball contents
-   - `npx publint` — no errors
-4. Run `npm publish --access public`
-5. Verify: `npm info x402-mcp-server` returns the published version
-6. Verify: `npx -y x402-mcp-server --help` (or equivalent startup) works from a clean directory with no local source
-7. Create git tag `v1.0.0` and push to remote
+Plans:
+- [ ] 02-01-PLAN.md — GitHub distribution: commit dist/, comprehensive README, create public repo, verify npx install
 
 ### Success Criteria
 
-1. `npm info x402-mcp-server` returns version `1.0.0` with correct `bin`, `main`, and `engines` fields
-2. `npx -y x402-mcp-server` launches the MCP server without errors in a directory that has no local project files
-3. The npm registry page for `x402-mcp-server` displays the updated README with `npx -y` install instructions
-4. All `npx` references in README use the `-y` flag (no interactive install prompts that would break MCP stdio transport)
+1. `npx -y github:jameswilliamwisdom/x402-mcp-server` launches the MCP server from any directory without errors
+2. README on GitHub shows free mode first, all 4 client configs (Claude Desktop, Claude Code, Cursor, Windsurf), tools table with pricing, shields.io badges
+3. All `npx` references use the `-y` flag (verified by grep)
+4. GitHub repo is public at `github.com/jameswilliamwisdom/x402-mcp-server`
 
 ---
 
