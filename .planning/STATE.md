@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-03-11T15:30:00.000Z"
+last_updated: "2026-03-11T16:45:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 6
 ---
 
 # State: x402 API Network — v1.0
 
 **Milestone:** v1.0 — npm Publish + Brand Site
 **Last updated:** 2026-03-11
-**Overall status:** Phase 3 in progress — Plan 03-01 complete. Astro scaffold, brand theming, dark mode enforcement, and logo/OG assets all done. Plans 03-02 (landing page) and 03-03 (docs) next.
+**Overall status:** Phase 3 in progress — Plans 03-01, 03-02, 03-03 complete. Plan 03-04 (cross-cutting validation) is the final wave before Phase 4 deployment.
 
 ## Phase Status
 
@@ -23,12 +23,12 @@ progress:
 |-------|------|--------|----------|
 | 1 | Package Hardening + Input Validation | Complete (2/2 plans) | None |
 | 2 | npm Publish (GitHub Distribution) | Complete (1/1 plan) | None |
-| 3 | Brand Site Build | In progress (1/4 plans) | None |
+| 3 | Brand Site Build | In progress (3/4 plans) | None |
 | 4 | Deployment | Not started | Phase 3 |
 
 ## Active Phase
 
-Phase 3 — Brand Site Build. Plan 03-01 complete. Working on plans 03-02 (landing page) and 03-03 (docs).
+Phase 3 — Brand Site Build. Plans 03-01, 03-02, 03-03 complete. Working on plan 03-04 (cross-cutting validation, pricing sync, npx -y check, visual verification).
 
 ## Completed
 
@@ -39,6 +39,8 @@ Phase 3 — Brand Site Build. Plan 03-01 complete. Working on plans 03-02 (landi
 - [x] Phase 1 Plan 02: Input validation — VAL-01..02 complete (2026-03-09)
 - [x] Phase 2 Plan 01: GitHub distribution — dist/ committed, README rewritten, public repo created, npx install verified (2026-03-10)
 - [x] Phase 3 Plan 01: Astro + Starlight scaffold, brand CSS tokens, dark mode enforcement, logo/OG assets (2026-03-11)
+- [x] Phase 3 Plan 02: Custom landing page (Hero, HowItWorks, PricingSummary, Footer) + pricing page with full tool table (2026-03-11)
+- [x] Phase 3 Plan 03: Documentation — Getting Started (free+paid mode, 4 MCP clients), API Reference (all 6 tools), Wallet Setup (MetaMask→Base→USDC→key) (2026-03-11)
 
 ## Open Questions
 
@@ -75,4 +77,4 @@ See: `.planning/PROJECT.md` and `.planning/ROADMAP.md`
 ---
 
 *State initialized: 2026-03-09*
-*Last updated: 2026-03-11 — Phase 3 Plan 01 complete: Astro + Starlight scaffold in site/, brand CSS tokens, dark mode enforcement via component overrides, logo-mark.png, logo-lockup.png, og-image.png (1200x630) all in site/public/. Zod version conflict resolved via package.json overrides. Build verified: dist/index.html, no _server/. Plans 03-02 (landing page) and 03-03 (docs) are unblocked.*
+*Last updated: 2026-03-11 — Phase 3 Plans 03-02 and 03-03 complete. Landing page + pricing page built (Astro components, brand CSS). Docs written: Getting Started (free+paid, 4 MCP clients), API Reference (all 6 tools), Wallet Setup (MetaMask→USDC→key). Key learnings: MDX uses JSX comments {/* */} not HTML <!-- -->; placeholder PNGs for src/assets/ must have valid scanline filter bytes for Astro sharp optimizer. Plan 03-04 (validation pass) unblocked.*

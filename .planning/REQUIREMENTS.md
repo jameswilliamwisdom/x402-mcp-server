@@ -35,10 +35,10 @@ Requirements for milestone v1.0 — Publish + Brand. Each maps to roadmap phases
 
 ### Brand Site — Documentation
 
-- [ ] **DOCS-01**: Getting started guide with free mode and paid mode paths
-- [ ] **DOCS-02**: API reference for all 6 MCP tools (params, returns, examples)
-- [ ] **DOCS-03**: Claude/MCP config example (copy-pasteable JSON)
-- [ ] **DOCS-04**: Wallet setup guide (Base network, USDC funding)
+- [x] **DOCS-01**: Getting started guide with free mode and paid mode paths
+- [x] **DOCS-02**: API reference for all 6 MCP tools (params, returns, examples)
+- [x] **DOCS-03**: Claude/MCP config example (copy-pasteable JSON)
+- [x] **DOCS-04**: Wallet setup guide (Base network, USDC funding)
 
 ### Deployment
 
@@ -92,10 +92,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SITE-02 | 3 — Brand Site Build | Pending |
 | SITE-03 | 3 — Brand Site Build | Pending |
 | SITE-04 | 3 — Brand Site Build | Pending |
-| DOCS-01 | 3 — Brand Site Build | Pending |
-| DOCS-02 | 3 — Brand Site Build | Pending |
-| DOCS-03 | 3 — Brand Site Build | Pending |
-| DOCS-04 | 3 — Brand Site Build | Pending |
+| DOCS-01 | 3 — Brand Site Build | Complete |
+| DOCS-02 | 3 — Brand Site Build | Complete |
+| DOCS-03 | 3 — Brand Site Build | Complete |
+| DOCS-04 | 3 — Brand Site Build | Complete |
 | DEPLOY-01 | 3 — Brand Site Build | Pending |
 | DEPLOY-02 | 4 — Deployment | Pending |
 
