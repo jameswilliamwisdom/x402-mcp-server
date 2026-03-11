@@ -67,44 +67,13 @@ Plans:
 
 **Prerequisite:** Phase 2 complete
 
-### Tasks
+**Plans:** 4 plans in 3 waves
 
-**Scaffold**
-1. Scaffold Astro + Starlight in `site/`: `npm create astro@latest site -- --template starlight`
-2. Set `output: 'static'` explicitly in `site/astro.config.mjs` (do not rely on implicit default)
-3. Set `site:` field in `astro.config.mjs` to the home server address once confirmed
-4. Run `npm run build` inside `site/` and verify `site/dist/` contains `index.html` (not a `server/` directory)
-
-**Marketing pages (SITE-01..04)**
-5. Build hero section in `site/src/pages/index.astro`:
-   - One-liner pitch: "Pay-per-use APIs for AI agents. One npm install, automatic USDC micropayments on Base."
-   - Primary CTA linking to Getting Started guide
-   - Value proposition bullets (free test mode, single env var, $0.10/request cap)
-6. Build pricing table component listing all 6 MCP tools with names, descriptions, and per-call USDC cost
-7. Build "How it works" section explaining the x402 payment flow (agent calls tool → MCP server intercepts 402 → `x402-fetch` pays USDC → API responds)
-8. Add OG meta tags to `site/src/layouts/` or directly in page `<head>`: `og:title`, `og:description`, `og:image`, `twitter:card`
-9. Create OG image asset in `site/public/`
-
-**Documentation pages (DOCS-01..04)**
-10. Write Getting Started guide at `site/src/content/docs/getting-started.mdx`:
-    - Free mode path: install → add to Claude config (no wallet) → list available tools → call a free tool
-    - Paid mode path: fund Base wallet with USDC → set `X402_PRIVATE_KEY` env var → call paid tool
-    - Note the `@x402/fetch` vs `x402-fetch` distinction (common mistake)
-11. Write API reference at `site/src/content/docs/api-reference.mdx`:
-    - All 6 MCP tools with parameter tables, return schemas, and usage examples
-    - Free vs. paid column for each tool
-12. Write copy-pasteable Claude Desktop config block in Getting Started (or standalone page):
-    - JSON with `command: "npx"`, `args: ["-y", "x402-mcp-server"]`, `env` object
-    - Must use `-y` flag
-13. Write wallet setup guide at `site/src/content/docs/wallet-setup.mdx`:
-    - Add Base network to MetaMask
-    - Bridge or buy USDC on Base
-    - Export private key safely (env var, not hardcoded)
-
-**Validation**
-14. Grep all docs for `npx x402-mcp-server` without `-y` — fix any occurrences
-15. Verify pricing table matches values in `src/index.ts` (add sync comments to both files)
-16. Run `npm run build` inside `site/` — zero errors, `site/dist/index.html` exists
+Plans:
+- [ ] 03-01-PLAN.md — Scaffold Astro + Starlight, brand CSS theming, dark mode enforcement, logo/OG assets (Wave 1)
+- [ ] 03-02-PLAN.md — Custom landing page + pricing page with all 6 tools (Wave 2)
+- [ ] 03-03-PLAN.md — Documentation: Getting Started, API Reference, Wallet Setup (Wave 2)
+- [ ] 03-04-PLAN.md — Cross-cutting validation, pricing sync, npx -y check, clean build + visual verification (Wave 3)
 
 ### Success Criteria
 
