@@ -3,32 +3,32 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-09T22:31:34.339Z"
+last_updated: "2026-03-10T00:00:00.000Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 3
+  completed_plans: 3
 ---
 
 # State: x402 API Network — v1.0
 
 **Milestone:** v1.0 — npm Publish + Brand Site
 **Last updated:** 2026-03-09
-**Overall status:** Phase 1 complete — all 8 requirements (PKG-01..06, VAL-01..02) satisfied. Ready for Phase 2.
+**Overall status:** Phase 2 complete — GitHub repo public, npx install working, comprehensive README. Ready for Phase 3.
 
 ## Phase Status
 
 | Phase | Name | Status | Blockers |
 |-------|------|--------|----------|
 | 1 | Package Hardening + Input Validation | Complete (2/2 plans) | None |
-| 2 | npm Publish | Not started | Phase 1 ✓ |
-| 3 | Brand Site Build | Not started | Phase 2 |
+| 2 | npm Publish (GitHub Distribution) | Complete (1/1 plan) | None |
+| 3 | Brand Site Build | Not started | Phase 2 ✓ |
 | 4 | Deployment | Not started | Phase 3 |
 
 ## Active Phase
 
-Phase 2 — npm Publish. Phase 1 complete.
+Phase 3 — Brand Site Build. Phases 1-2 complete.
 
 ## Completed
 
@@ -37,6 +37,7 @@ Phase 2 — npm Publish. Phase 1 complete.
 - [x] Roadmap created — 4 phases, 100% requirement coverage (2026-03-09)
 - [x] Phase 1 Plan 01: Package hardening — PKG-01..06 complete (2026-03-09)
 - [x] Phase 1 Plan 02: Input validation — VAL-01..02 complete (2026-03-09)
+- [x] Phase 2 Plan 01: GitHub distribution — dist/ committed, README rewritten, public repo created, npx install verified (2026-03-10)
 
 ## Open Questions
 
@@ -72,4 +73,4 @@ See: `.planning/PROJECT.md` and `.planning/ROADMAP.md`
 ---
 
 *State initialized: 2026-03-09*
-*Last updated: 2026-03-09 — Phase 1 Plan 02 complete: Zod regex on coin params (injection protection), .url() on url/pdf_url params (URL validation). Phase 1 fully complete. Deferred: pkg.main vs pkg.exports suggestion from publint (cosmetic, post-v1).*
+*Last updated: 2026-03-10 — Phase 2 Plan 01 complete: dist/ committed for GitHub direct install, README rewritten with all 6 tools, 4 MCP client configs, free/paid quick starts. Public GitHub repo at github.com/jameswilliamwisdom/x402-mcp-server. npx install verified. Phase 2 fully complete.*

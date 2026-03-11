@@ -9,7 +9,7 @@
 | Phase | Name | Requirements | Status |
 |-------|------|-------------|--------|
 | 1 | Package Hardening + Input Validation | Complete    | 2026-03-09 |
-| 2 | npm Publish | NPM-01..02 | Pending |
+| 2 | npm Publish (GitHub Distribution) | NPM-01..02 | Complete    |
 | 3 | Brand Site Build | SITE-01..04, DOCS-01..04, DEPLOY-01 | Pending |
 | 4 | Deployment | DEPLOY-02 | Pending |
 
@@ -45,10 +45,10 @@ Plans:
 
 **Prerequisite:** Phase 1 complete
 
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 02-01-PLAN.md — GitHub distribution: commit dist/, comprehensive README, create public repo, verify npx install
+- [x] 02-01-PLAN.md — GitHub distribution: commit dist/, comprehensive README, create public repo, verify npx install (completed 2026-03-10)
 
 ### Success Criteria
 
