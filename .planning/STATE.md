@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-03-11T16:45:00.000Z"
+last_updated: "2026-03-11T16:15:00.000Z"
 progress:
   total_phases: 4
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # State: x402 API Network — v1.0
 
 **Milestone:** v1.0 — npm Publish + Brand Site
 **Last updated:** 2026-03-11
-**Overall status:** Phase 3 in progress — Plans 03-01, 03-02, 03-03 complete. Plan 03-04 (cross-cutting validation) is the final wave before Phase 4 deployment.
+**Overall status:** Phase 3 complete (4/4 plans) — all validation checks passed, user approved visual checkpoint. Phase 4 (Deployment) is next.
 
 ## Phase Status
 
@@ -23,12 +23,12 @@ progress:
 |-------|------|--------|----------|
 | 1 | Package Hardening + Input Validation | Complete (2/2 plans) | None |
 | 2 | npm Publish (GitHub Distribution) | Complete (1/1 plan) | None |
-| 3 | Brand Site Build | In progress (3/4 plans) | None |
-| 4 | Deployment | Not started | Phase 3 |
+| 3 | Brand Site Build | Complete (4/4 plans) | None |
+| 4 | Deployment | Not started | None (Phase 3 done) |
 
 ## Active Phase
 
-Phase 3 — Brand Site Build. Plans 03-01, 03-02, 03-03 complete. Working on plan 03-04 (cross-cutting validation, pricing sync, npx -y check, visual verification).
+Phase 4 — Deployment. Phase 3 fully complete. Next: rsync site/dist/ to home server, configure nginx, obtain TLS cert via certbot, smoke test from external network.
 
 ## Completed
 
@@ -41,6 +41,7 @@ Phase 3 — Brand Site Build. Plans 03-01, 03-02, 03-03 complete. Working on pla
 - [x] Phase 3 Plan 01: Astro + Starlight scaffold, brand CSS tokens, dark mode enforcement, logo/OG assets (2026-03-11)
 - [x] Phase 3 Plan 02: Custom landing page (Hero, HowItWorks, PricingSummary, Footer) + pricing page with full tool table (2026-03-11)
 - [x] Phase 3 Plan 03: Documentation — Getting Started (free+paid mode, 4 MCP clients), API Reference (all 6 tools), Wallet Setup (MetaMask→Base→USDC→key) (2026-03-11)
+- [x] Phase 3 Plan 04: Cross-cutting validation — all 10 checks passed, user approved visual checkpoint. Phase 3 complete. (2026-03-11)
 
 ## Open Questions
 
@@ -77,4 +78,4 @@ See: `.planning/PROJECT.md` and `.planning/ROADMAP.md`
 ---
 
 *State initialized: 2026-03-09*
-*Last updated: 2026-03-11 — Phase 3 Plans 03-02 and 03-03 complete. Landing page + pricing page built (Astro components, brand CSS). Docs written: Getting Started (free+paid, 4 MCP clients), API Reference (all 6 tools), Wallet Setup (MetaMask→USDC→key). Key learnings: MDX uses JSX comments {/* */} not HTML <!-- -->; placeholder PNGs for src/assets/ must have valid scanline filter bytes for Astro sharp optimizer. Plan 03-04 (validation pass) unblocked.*
+*Last updated: 2026-03-11 — Phase 3 complete (4/4 plans). Plan 03-04 validation pass: all 10 automated checks passed with zero fixes (npx -y, pricing sync, static build, all 5 routes, no SSR artifacts, OG absolute URLs, explicit static output, all 6 tools, all 4 clients, SYNC comments). User approved visual checkpoint. site/dist/ is verified and ready for Phase 4 deployment.*
