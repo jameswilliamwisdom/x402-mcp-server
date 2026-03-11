@@ -1,6 +1,109 @@
 ---
 title: Wallet Setup
-description: Set up a crypto wallet with USDC on Base to use paid x402 APIs.
+description: Set up a crypto wallet to use paid x402 APIs — MetaMask, Base network, USDC funding, and private key export.
 ---
 
-Content coming in Plan 03-03.
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+To use paid x402 APIs, you need a small amount of USDC (a US dollar stablecoin) on the Base network. This guide walks you through the complete setup — from installing a wallet to exporting your private key for use with the MCP server.
+
+You don't need to be a crypto expert. Follow these steps and you'll be ready to make your first paid API call.
+
+<Steps>
+
+1. **Install MetaMask**
+
+   MetaMask is a browser extension wallet that runs in Chrome, Firefox, Brave, or Edge.
+
+   1. Go to [metamask.io](https://metamask.io) and click "Download"
+   2. Install the extension for your browser
+   3. Open MetaMask and click "Create a new wallet"
+   4. Follow the setup prompts to create a password and generate your recovery phrase
+
+   ![MetaMask installation](../../assets/wallet/placeholder-metamask-install.png)
+
+   <Aside type="danger" title="Protect your recovery phrase">
+   Never share your recovery phrase or private key with anyone. Anyone who has access to either can take your funds. Write your recovery phrase on paper and store it somewhere safe — not in a notes app or email.
+   </Aside>
+
+2. **Add the Base Network**
+
+   Base is a fast, low-cost Layer 2 network built on Ethereum. Most x402 API payments are fractions of a cent, and Base keeps those fees negligible.
+
+   **Method 1 — Easiest (chainlist.org):**
+   1. Go to [chainlist.org](https://chainlist.org)
+   2. Search for "Base"
+   3. Click "Add to MetaMask" and confirm in the MetaMask popup
+
+   **Method 2 — Manual (MetaMask Settings):**
+
+   Open MetaMask → Settings → Networks → Add Network, and enter:
+
+   | Field | Value |
+   |-------|-------|
+   | Network Name | Base |
+   | RPC URL | `https://mainnet.base.org` |
+   | Chain ID | `8453` |
+   | Currency Symbol | `ETH` |
+   | Block Explorer | `https://basescan.org` |
+
+   ![Adding Base network to MetaMask](../../assets/wallet/placeholder-add-base.png)
+
+   <Aside type="note">
+   Base is a Layer 2 on Ethereum — transactions are fast and cheap. You'll use ETH to pay gas fees (a few cents at most), and USDC to pay for API calls.
+   </Aside>
+
+3. **Get USDC on Base**
+
+   USDC is a stablecoin pegged 1:1 to the US dollar. $1 USDC = $1 USD, always. There's no price volatility — what you fund is what you spend.
+
+   **If you already have crypto:**
+
+   Bridge USDC from Ethereum mainnet to Base using [bridge.base.org](https://bridge.base.org). Connect MetaMask, select USDC, choose the amount, and bridge.
+
+   **If you're starting from scratch:**
+
+   1. Create an account on [Coinbase](https://coinbase.com)
+   2. Buy USDC directly (it's available under "Pay with card" or bank transfer)
+   3. Withdraw to your MetaMask address on the Base network
+
+   **How much do I need?**
+
+   Not much. The pricing is:
+   - Screenshot or sentiment: $0.01 USDC per call
+   - Market overview: $0.05 USDC per call
+   - Intelligence report: $0.10 USDC per call
+
+   $1 covers 100 screenshot calls. $5 covers months of typical usage. Start small.
+
+   ![USDC balance on Base in MetaMask](../../assets/wallet/placeholder-get-usdc.png)
+
+4. **Export Your Private Key**
+
+   The x402 MCP server needs your private key to authorize payments automatically. It stays on your machine — it's only used as an environment variable in your local config.
+
+   To export from MetaMask:
+   1. Open MetaMask and click your account icon (top right)
+   2. Click "Account Details"
+   3. Click "Show Private Key"
+   4. Enter your MetaMask password to confirm
+   5. Copy the private key — it starts with `0x` and is 66 characters long
+
+   ![Exporting private key from MetaMask](../../assets/wallet/placeholder-export-key.png)
+
+   <Aside type="danger" title="Keep your private key secure">
+   Your private key controls your wallet funds. Never paste it in chat, email, GitHub, or any website. Only use it as an environment variable in your local MCP config. If you ever suspect exposure, create a new wallet immediately and move your funds.
+   </Aside>
+
+   Once you have the key, add it to your MCP client config. See [Getting Started — Paid Mode](/getting-started/#paid-mode) for the exact config format for all 4 clients.
+
+</Steps>
+
+## Security Tips
+
+Use a dedicated wallet for x402 API payments — not your main crypto wallet. This limits exposure if your private key is ever compromised.
+
+- Fund with small amounts. $1–$5 covers thousands of API calls.
+- Never commit private keys to git. Use environment variables.
+- Rotate keys if you suspect exposure. Create a new wallet, move funds, update your MCP config.
+- The `x402_network_info` tool shows your wallet status — use it to confirm the server has picked up your key correctly.
