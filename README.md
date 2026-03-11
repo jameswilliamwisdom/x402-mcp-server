@@ -26,7 +26,7 @@ No wallet or private key needed. Add the server to your MCP client config:
   "mcpServers": {
     "x402": {
       "command": "npx",
-      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"]
+      "args": ["-y", "x402-mcp-server"]
     }
   }
 }
@@ -46,7 +46,7 @@ Requires a Base wallet funded with USDC.
   "mcpServers": {
     "x402": {
       "command": "npx",
-      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "args": ["-y", "x402-mcp-server"],
       "env": {
         "X402_PRIVATE_KEY": "your-private-key-here"
       }
@@ -74,7 +74,7 @@ Config file location:
   "mcpServers": {
     "x402": {
       "command": "npx",
-      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "args": ["-y", "x402-mcp-server"],
       "env": {
         "X402_PRIVATE_KEY": "your-private-key-here"
       }
@@ -86,7 +86,7 @@ Config file location:
 ### Claude Code
 
 ```bash
-claude mcp add --transport stdio x402 -- npx -y github:jameswilliamwisdom/x402-mcp-server
+claude mcp add --transport stdio x402 -- npx -y x402-mcp-server
 ```
 
 Then set `X402_PRIVATE_KEY` in your environment.
@@ -100,7 +100,7 @@ Config file: `~/.cursor/mcp.json`
   "mcpServers": {
     "x402": {
       "command": "npx",
-      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "args": ["-y", "x402-mcp-server"],
       "env": {
         "X402_PRIVATE_KEY": "your-private-key-here"
       }
@@ -118,7 +118,7 @@ Config file: `~/.codeium/windsurf/mcp_config.json`
   "mcpServers": {
     "x402": {
       "command": "npx",
-      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "args": ["-y", "x402-mcp-server"],
       "env": {
         "X402_PRIVATE_KEY": "your-private-key-here"
       }
