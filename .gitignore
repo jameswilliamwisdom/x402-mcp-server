@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output — dist/ intentionally committed for npx github: install
+# dist/
 
 # Environment / secrets — CRITICAL
 .env
