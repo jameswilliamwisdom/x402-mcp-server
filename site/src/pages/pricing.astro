@@ -1,0 +1,237 @@
+---
+// pricing.astro — Detailed pricing page (SITE-02)
+// Full custom page — NOT Starlight template.
+// Sets data-theme="dark" directly, imports global.css manually.
+import '../styles/global.css';
+import PricingTable from '../components/pricing/PricingTable.astro';
+
+const SITE_URL = import.meta.env.SITE || 'https://x402.todo';
+const OG_IMAGE = `${SITE_URL}/og-image.png`;
+---
+
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Pricing — x402 Network</title>
+    <meta
+      name="description"
+      content="Pay only for what you use. 6 tools from Free to $0.10 per call. No subscriptions, no API keys."
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Pricing — x402 Network" />
+    <meta
+      property="og:description"
+      content="Pay only for what you use. 6 tools from Free to $0.10 per call. No subscriptions, no API keys."
+    />
+    <meta property="og:image" content={OG_IMAGE} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Pricing — x402 Network" />
+    <meta
+      name="twitter:description"
+      content="Pay only for what you use. 6 tools from Free to $0.10 per call. No subscriptions, no API keys."
+    />
+    <meta name="twitter:image" content={OG_IMAGE} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/logo-mark.png" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap"
+    />
+  </head>
+  <body>
+    <div class="page">
+      <nav class="top-nav">
+        <div class="container">
+          <a href="/" class="nav-home">
+            <img src="/logo-mark.png" alt="x402" width="24" height="24" class="nav-logo" />
+            <span class="nav-brand">x402</span>
+          </a>
+          <div class="nav-links">
+            <a href="/getting-started/" class="nav-link">Getting Started</a>
+            <a href="/api-reference/" class="nav-link">API Reference</a>
+          </div>
+        </div>
+      </nav>
+
+      <main class="main">
+        <div class="container">
+          <header class="page-header">
+            <h1 class="page-title">Pricing</h1>
+            <p class="page-subtitle">
+              Pay only for what you use. No subscriptions, no API keys.
+            </p>
+          </header>
+
+          <div class="payment-info">
+            <span class="payment-icon" aria-hidden="true">&#9654;</span>
+            All payments in USDC on Base (L2 Ethereum). Sub-second settlement.
+          </div>
+
+          <PricingTable />
+
+          <div class="cta-section">
+            <p class="cta-label">Ready to start?</p>
+            <a href="/getting-started/" class="btn-primary">Get Started</a>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>
+
+<style>
+  .page {
+    min-height: 100vh;
+    background: var(--x402-bg);
+    color: var(--x402-text);
+    font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .top-nav {
+    border-bottom: 1px solid var(--x402-border);
+    padding: 1rem 1.5rem;
+  }
+
+  .top-nav .container {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-home {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+  }
+
+  .nav-logo {
+    display: block;
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+  }
+
+  .nav-brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--x402-text);
+    letter-spacing: -0.01em;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .nav-link {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--x402-text-muted);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .nav-link:hover {
+    color: var(--x402-text);
+  }
+
+  .main {
+    padding: 4rem 1.5rem;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .page-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .page-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--x402-text);
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  .page-subtitle {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.125rem;
+    font-weight: 400;
+    color: var(--x402-text-muted);
+    margin: 0;
+  }
+
+  .payment-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    color: var(--x402-text-muted);
+    background: var(--x402-surface);
+    border: 1px solid var(--x402-border);
+    border-radius: 6px;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .payment-icon {
+    color: var(--x402-green);
+    font-size: 0.75rem;
+  }
+
+  .cta-section {
+    margin-top: 3rem;
+    text-align: center;
+  }
+
+  .cta-label {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--x402-text);
+    margin: 0 0 1.25rem;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.75rem 2rem;
+    background: var(--x402-green);
+    color: #000000;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--x402-green-muted);
+    transform: translateY(-1px);
+  }
+</style>

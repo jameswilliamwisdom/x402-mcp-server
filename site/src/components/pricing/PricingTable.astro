@@ -1,0 +1,237 @@
+---
+// PricingTable.astro — Data-driven table for all 6 MCP tools (SITE-02)
+// SYNC: prices must match src/index.ts — grep both files if pricing changes
+// To verify sync: grep -E "price|USDC" src/index.ts | grep -v '//'
+
+interface Tool {
+  name: string;
+  toolId: string;
+  price: string;
+  description: string;
+  freeMode: boolean;
+}
+
+// SYNC: prices must match src/index.ts declarations
+const tools: Tool[] = [
+  {
+    name: "Network Info",
+    toolId: "x402_network_info",
+    price: "Free",
+    description: "List all APIs with pricing, status, and capabilities",
+    freeMode: true,
+  },
+  {
+    name: "Screenshot",
+    toolId: "x402_screenshot",
+    price: "$0.01",
+    description: "Capture website screenshots as base64 images",
+    freeMode: true,
+  },
+  {
+    name: "PDF Extract",
+    toolId: "x402_pdf_extract",
+    price: "$0.01",
+    description: "Extract text content from PDF documents",
+    freeMode: true,
+  },
+  {
+    name: "Sentiment",
+    toolId: "x402_sentiment",
+    price: "$0.01",
+    description: "Real-time crypto sentiment for a specific coin",
+    freeMode: true,
+  },
+  {
+    name: "Market Overview",
+    toolId: "x402_market_overview",
+    price: "$0.05",
+    description: "Broad crypto market sentiment overview",
+    freeMode: true,
+  },
+  {
+    name: "Intelligence",
+    toolId: "x402_intelligence",
+    price: "$0.10",
+    description: "Comprehensive multi-source intelligence analysis",
+    freeMode: true,
+  },
+];
+---
+
+<div class="pricing-table-wrap">
+  <div class="pricing-table">
+    <div class="table-header">
+      <span class="col-name">Tool</span>
+      <span class="col-id">Tool ID</span>
+      <span class="col-price">Price / call</span>
+      <span class="col-mode">Free Mode</span>
+    </div>
+
+    {tools.map((tool) => (
+      <div class="table-row">
+        <div class="col-name">
+          <span class="tool-name">{tool.name}</span>
+          <span class="tool-desc">{tool.description}</span>
+        </div>
+        <div class="col-id">
+          <code class="tool-id">{tool.toolId}</code>
+        </div>
+        <div class="col-price">
+          <span class="tool-price">{tool.price}</span>
+        </div>
+        <div class="col-mode">
+          {tool.freeMode && (
+            <span class="free-badge">Free</span>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+
+  <p class="free-mode-note">
+    All tools have free test mode — no wallet required to try them.
+    Paid mode unlocks full capabilities.
+  </p>
+</div>
+
+<style>
+  .pricing-table-wrap {
+    width: 100%;
+  }
+
+  .pricing-table {
+    border: 1px solid var(--x402-border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr 1fr;
+    gap: 0;
+    padding: 0.75rem 1.25rem;
+    background: var(--x402-elevated);
+    border-bottom: 1px solid var(--x402-border);
+  }
+
+  .table-header span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--x402-text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .table-row {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr 1fr;
+    gap: 0;
+    padding: 1rem 1.25rem;
+    background: var(--x402-surface);
+    border-bottom: 1px solid var(--x402-border);
+    align-items: center;
+  }
+
+  .table-row:last-child {
+    border-bottom: none;
+  }
+
+  .table-row:nth-child(even) {
+    background: var(--x402-bg);
+  }
+
+  .col-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .tool-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: var(--x402-text);
+  }
+
+  .tool-desc {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--x402-text-muted);
+    line-height: 1.4;
+  }
+
+  .tool-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--x402-text-muted);
+    background: none;
+    padding: 0;
+    word-break: break-all;
+  }
+
+  .col-price {
+    display: flex;
+    align-items: center;
+  }
+
+  .tool-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--x402-green);
+  }
+
+  .col-mode {
+    display: flex;
+    align-items: center;
+  }
+
+  .free-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    color: var(--x402-green);
+    background: var(--x402-green-glow);
+    border: 1px solid var(--x402-green-dim);
+    border-radius: 4px;
+    padding: 0.2em 0.5em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .free-mode-note {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--x402-text-muted);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* Responsive: stack on mobile */
+  @media (max-width: 640px) {
+    .table-header {
+      display: none;
+    }
+
+    .table-row {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
+
+    .col-id,
+    .col-mode {
+      display: flex;
+      align-items: center;
+    }
+
+    .col-price {
+      font-size: 1rem;
+    }
+  }
+</style>
