@@ -1,0 +1,35 @@
+---
+// HowItWorks.astro — Protocol one-liner (SITE-03)
+// Per user decision: one-liner ONLY — no detailed walkthrough section
+---
+
+<section class="how-it-works">
+  <div class="container">
+    <p class="protocol-flow">
+      HTTP 402 &rarr; USDC payment &rarr; API response. That's the whole protocol.
+    </p>
+  </div>
+</section>
+
+<style>
+  .how-it-works {
+    border-top: 1px solid var(--x402-border);
+    border-bottom: 1px solid var(--x402-border);
+    padding: 2rem 1.5rem;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .protocol-flow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(0.9rem, 2.5vw, 1.1rem);
+    font-weight: 400;
+    color: var(--x402-text-muted);
+    margin: 0;
+    letter-spacing: 0.01em;
+  }
+</style>

@@ -1,0 +1,181 @@
+---
+// Hero.astro — Primary hero section (SITE-01)
+// One-liner pitch, value props, and CTA links
+---
+
+<section class="hero">
+  <div class="container">
+    <div class="logo-wrap">
+      <img src="/logo-lockup.png" alt="x402 Network" class="logo" width="240" height="80" />
+      <div class="glow" aria-hidden="true"></div>
+    </div>
+
+    <h1 class="headline">
+      Pay-per-use APIs for AI agents.
+    </h1>
+    <p class="subheadline">
+      One npm install, automatic USDC micropayments on Base.
+    </p>
+
+    <ul class="value-props">
+      <li>
+        <span class="bullet">&#10003;</span>
+        <span>Free test mode — no wallet needed to start</span>
+      </li>
+      <li>
+        <span class="bullet">&#10003;</span>
+        <span>Single env var — add <code>X402_PRIVATE_KEY</code> and go</span>
+      </li>
+      <li>
+        <span class="bullet">&#10003;</span>
+        <span>Micropayments — $0.01 to $0.10 per request, no subscriptions</span>
+      </li>
+    </ul>
+
+    <div class="cta-group">
+      <a href="/getting-started/" class="btn-primary">Get Started</a>
+      <a href="/pricing/" class="btn-secondary">View Pricing</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding: 5rem 1.5rem 4rem;
+    text-align: center;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .logo-wrap {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    position: relative;
+    z-index: 1;
+    display: block;
+    max-width: 240px;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .glow {
+    position: absolute;
+    inset: -40px;
+    background: radial-gradient(ellipse at center, var(--x402-green-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .headline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
+    color: var(--x402-text);
+    margin: 0 0 1rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+  }
+
+  .subheadline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-weight: 400;
+    color: var(--x402-text-muted);
+    margin: 0 0 2.5rem;
+    line-height: 1.5;
+  }
+
+  .value-props {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: left;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .value-props li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    color: var(--x402-text);
+  }
+
+  .bullet {
+    color: var(--x402-green);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    margin-top: 0.05em;
+  }
+
+  .value-props code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    color: var(--x402-green);
+    background: var(--x402-surface);
+    border: 1px solid var(--x402-border);
+    border-radius: 4px;
+    padding: 0.1em 0.4em;
+  }
+
+  .cta-group {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: var(--x402-green);
+    color: #000000;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .btn-primary:hover {
+    background: var(--x402-green-muted);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: transparent;
+    color: var(--x402-text);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid var(--x402-border);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--x402-green);
+    color: var(--x402-green);
+  }
+</style>

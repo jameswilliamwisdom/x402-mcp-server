@@ -1,0 +1,105 @@
+---
+// PricingSummary.astro — Brief pricing overview on homepage (SITE-02 partial)
+// SYNC: prices must match src/index.ts and PricingTable.astro
+const tools = [
+  { name: "Network Info",    price: "Free"  },
+  { name: "Screenshot",     price: "$0.01" },
+  { name: "PDF Extract",    price: "$0.01" },
+  { name: "Sentiment",      price: "$0.01" },
+  { name: "Market Overview", price: "$0.05" },
+  { name: "Intelligence",   price: "$0.10" },
+];
+---
+
+<section class="pricing-summary">
+  <div class="container">
+    <p class="summary-lead">6 tools. $0.01 to $0.10 per call. No subscriptions.</p>
+
+    <div class="tools-grid">
+      {tools.map((tool) => (
+        <div class="tool-row">
+          <span class="tool-name">{tool.name}</span>
+          <span class="tool-price">{tool.price}</span>
+        </div>
+      ))}
+    </div>
+
+    <a href="/pricing/" class="pricing-link">See full pricing &rarr;</a>
+  </div>
+</section>
+
+<style>
+  .pricing-summary {
+    padding: 3.5rem 1.5rem;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .summary-lead {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(1rem, 2.5vw, 1.25rem);
+    font-weight: 600;
+    color: var(--x402-text);
+    margin: 0 0 2rem;
+  }
+
+  .tools-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-width: 480px;
+    margin: 0 auto 2rem;
+    border: 1px solid var(--x402-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .tool-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    background: var(--x402-surface);
+    border-bottom: 1px solid var(--x402-border);
+  }
+
+  .tool-row:last-child {
+    border-bottom: none;
+  }
+
+  .tool-row:nth-child(even) {
+    background: var(--x402-bg);
+  }
+
+  .tool-name {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--x402-text);
+  }
+
+  .tool-price {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--x402-green);
+  }
+
+  .pricing-link {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--x402-green);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .pricing-link:hover {
+    color: var(--x402-green-muted);
+    text-decoration: underline;
+  }
+</style>

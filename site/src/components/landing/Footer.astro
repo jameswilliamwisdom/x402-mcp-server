@@ -1,0 +1,59 @@
+---
+// Footer.astro — Minimal site footer
+---
+
+<footer class="site-footer">
+  <div class="container">
+    <a
+      href="https://github.com/jameswilliamwisdom/x402-mcp-server"
+      class="footer-link"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      x402 Network
+    </a>
+    <span class="footer-sep" aria-hidden="true">&mdash;</span>
+    <span class="footer-tagline">Built for the AI agent economy.</span>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--x402-border);
+    padding: 2rem 1.5rem;
+  }
+
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-link {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.875rem;
+    color: var(--x402-text-dim);
+    text-decoration: none;
+    transition: color 0.15s ease;
+  }
+
+  .footer-link:hover {
+    color: var(--x402-text-muted);
+  }
+
+  .footer-sep {
+    font-size: 0.875rem;
+    color: var(--x402-text-dim);
+  }
+
+  .footer-tagline {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.875rem;
+    color: var(--x402-text-dim);
+  }
+</style>
