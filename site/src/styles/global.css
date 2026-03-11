@@ -1,0 +1,27 @@
+/* Brand CSS tokens — source of truth. See assets/brand-guidelines.md */
+/* SYNC: token values must match assets/brand-guidelines.md */
+:root {
+  --x402-green: #4ADE80;
+  --x402-green-muted: #22C55E;
+  --x402-green-dim: #166534;
+  --x402-green-glow: rgba(74, 222, 128, 0.15);
+  --x402-bg: #000000;
+  --x402-surface: #111111;
+  --x402-elevated: #1A1A1A;
+  --x402-border: #2A2A2A;
+  --x402-text: #FFFFFF;
+  --x402-text-muted: #A1A1AA;
+  --x402-text-dim: #52525B;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--x402-bg);
+  color: var(--x402-text);
+  margin: 0;
+}

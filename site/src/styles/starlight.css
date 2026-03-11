@@ -1,0 +1,27 @@
+/* Map x402 brand tokens to Starlight's theming layer */
+/* Full --sl-* reference: github.com/withastro/starlight/blob/main/packages/starlight/style/props.css */
+:root {
+  /* Accent (links, active states, highlights) */
+  --sl-color-accent-low: var(--x402-green-dim);
+  --sl-color-accent: var(--x402-green);
+  --sl-color-accent-high: #86EFAC;
+
+  /* Backgrounds */
+  --sl-color-bg: var(--x402-bg);
+  --sl-color-bg-nav: var(--x402-surface);
+  --sl-color-bg-sidebar: var(--x402-surface);
+
+  /* Text */
+  --sl-color-white: var(--x402-text);
+  --sl-color-gray-1: var(--x402-text);
+  --sl-color-gray-2: var(--x402-text-muted);
+  --sl-color-gray-3: var(--x402-text-dim);
+  --sl-color-gray-4: var(--x402-border);
+  --sl-color-gray-5: var(--x402-surface);
+  --sl-color-gray-6: var(--x402-bg);
+  --sl-color-black: var(--x402-bg);
+
+  /* Typography */
+  --sl-font: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --sl-font-system-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
