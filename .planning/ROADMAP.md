@@ -10,7 +10,7 @@
 |-------|------|-------------|--------|
 | 1 | Package Hardening + Input Validation | Complete    | 2026-03-09 |
 | 2 | npm Publish (GitHub Distribution) | NPM-01..02 | Complete    |
-| 3 | Brand Site Build | SITE-01..04, DOCS-01..04, DEPLOY-01 | Pending |
+| 3 | Brand Site Build | SITE-01..04, DOCS-01..04, DEPLOY-01 | In progress (1/4 plans) |
 | 4 | Deployment | DEPLOY-02 | Pending |
 
 ---
@@ -70,7 +70,7 @@ Plans:
 **Plans:** 4 plans in 3 waves
 
 Plans:
-- [ ] 03-01-PLAN.md — Scaffold Astro + Starlight, brand CSS theming, dark mode enforcement, logo/OG assets (Wave 1)
+- [x] 03-01-PLAN.md — Scaffold Astro + Starlight, brand CSS theming, dark mode enforcement, logo/OG assets (Wave 1) (completed 2026-03-11)
 - [ ] 03-02-PLAN.md — Custom landing page + pricing page with all 6 tools (Wave 2)
 - [ ] 03-03-PLAN.md — Documentation: Getting Started, API Reference, Wallet Setup (Wave 2)
 - [ ] 03-04-PLAN.md — Cross-cutting validation, pricing sync, npx -y check, clean build + visual verification (Wave 3)
