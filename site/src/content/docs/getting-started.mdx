@@ -1,6 +1,201 @@
 ---
 title: Getting Started
-description: Get started with x402 — the API marketplace for AI agents.
+description: Install x402 MCP server and start using pay-per-use APIs in under 5 minutes.
 ---
 
-Content coming in Plan 03-03.
+import { Steps, Tabs, TabItem, Aside } from '@astrojs/starlight/components';
+
+x402 gives your AI agent access to pay-per-use APIs — screenshots, PDF extraction, and crypto intelligence. One install, no API keys. Free test mode is available immediately; paid mode unlocks any URL with a USDC wallet on Base.
+
+## Quick Start — Free Mode
+
+<Steps>
+
+1. **Add the server to your MCP client**
+
+   <Tabs syncKey="mcp-client">
+   <TabItem label="Claude Desktop">
+   Add the following to your Claude Desktop config file.
+
+   **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+   **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+   ```json
+   {
+     "mcpServers": {
+       "x402": {
+         "command": "npx",
+         "args": ["-y", "x402-mcp-server"]
+       }
+     }
+   }
+   ```
+   </TabItem>
+   <TabItem label="Claude Code">
+   Run this command in your terminal:
+
+   ```sh
+   claude mcp add x402 npx -y x402-mcp-server
+   ```
+   </TabItem>
+   <TabItem label="Cursor">
+   Add the following to `.cursor/mcp.json` in your project (or the global Cursor MCP settings):
+
+   ```json
+   {
+     "mcpServers": {
+       "x402": {
+         "command": "npx",
+         "args": ["-y", "x402-mcp-server"]
+       }
+     }
+   }
+   ```
+   </TabItem>
+   <TabItem label="Windsurf">
+   Add the following to your Windsurf MCP settings:
+
+   ```json
+   {
+     "mcpServers": {
+       "x402": {
+         "command": "npx",
+         "args": ["-y", "x402-mcp-server"]
+       }
+     }
+   }
+   ```
+   </TabItem>
+   </Tabs>
+
+   <Aside type="caution" title="Always use -y">
+   Run `npx -y x402-mcp-server`, not `npx x402-mcp-server`. Without `-y`, npx prompts for confirmation — which breaks MCP's stdio transport.
+   </Aside>
+
+2. **Restart your MCP client**
+
+   After adding the config, restart your MCP client completely. Claude Desktop requires a full quit and reopen. The x402 tools will appear in the tool list on the next launch.
+
+3. **Try your first API call**
+
+   Ask your AI agent: `"Take a screenshot of example.com"`
+
+   In free mode, screenshots are limited to `example.com`, `example.org`, and `httpbin.org`. The `x402_network_info` tool is also free and shows all available APIs with their current status.
+
+</Steps>
+
+## Paid Mode
+
+Paid mode unlocks any URL and the full suite of crypto intelligence tools. Calls cost $0.01–$0.10 USDC per request, settled on-chain via the x402 protocol.
+
+<Steps>
+
+1. **Set up a wallet**
+
+   You need a small amount of USDC on the Base network. See the [Wallet Setup Guide](/wallet-setup/) for complete instructions — MetaMask install, adding Base, getting USDC, and exporting your private key.
+
+   Even $1 of USDC covers 100 screenshot calls.
+
+2. **Add your private key**
+
+   Once you have a wallet, add your private key to the MCP config as an environment variable.
+
+   <Tabs syncKey="mcp-client">
+   <TabItem label="Claude Desktop">
+   Update your `claude_desktop_config.json` to include the `env` block:
+
+   ```json
+   {
+     "mcpServers": {
+       "x402": {
+         "command": "npx",
+         "args": ["-y", "x402-mcp-server"],
+         "env": {
+           "X402_PRIVATE_KEY": "0xYOUR_PRIVATE_KEY"
+         }
+       }
+     }
+   }
+   ```
+   </TabItem>
+   <TabItem label="Claude Code">
+   Run this command to add the server with your private key:
+
+   ```sh
+   claude mcp add x402 --env X402_PRIVATE_KEY=0xYOUR_PRIVATE_KEY npx -y x402-mcp-server
+   ```
+   </TabItem>
+   <TabItem label="Cursor">
+   Update `.cursor/mcp.json` to include the `env` block:
+
+   ```json
+   {
+     "mcpServers": {
+       "x402": {
+         "command": "npx",
+         "args": ["-y", "x402-mcp-server"],
+         "env": {
+           "X402_PRIVATE_KEY": "0xYOUR_PRIVATE_KEY"
+         }
+       }
+     }
+   }
+   ```
+   </TabItem>
+   <TabItem label="Windsurf">
+   Update your Windsurf MCP settings to include the `env` block:
+
+   ```json
+   {
+     "mcpServers": {
+       "x402": {
+         "command": "npx",
+         "args": ["-y", "x402-mcp-server"],
+         "env": {
+           "X402_PRIVATE_KEY": "0xYOUR_PRIVATE_KEY"
+         }
+       }
+     }
+   }
+   ```
+   </TabItem>
+   </Tabs>
+
+3. **Make a paid API call**
+
+   Ask your AI agent: `"What's the crypto sentiment for BTC?"`
+
+   This calls `x402_sentiment` at $0.01 USDC. The payment is handled automatically — your agent receives a sentiment score, confidence level, and sourced analysis in return.
+
+   <Aside type="tip">
+   Your first call? Start with `x402_network_info` — it's free and shows all available APIs with their status and pricing.
+   </Aside>
+
+</Steps>
+
+## Common Issues
+
+**npx without -y**
+
+If your MCP client shows `"unexpected token"` errors or fails to start, check that your config uses `npx -y x402-mcp-server`, not just `npx x402-mcp-server`. The `-y` flag is required for MCP's stdio transport.
+
+**@x402/fetch vs x402-fetch**
+
+The package name is `x402-fetch` (no scope). `@x402/fetch` is a placeholder stub that will not work. If you see import errors referencing `@x402/fetch`, update your dependency to `x402-fetch`.
+
+**Insufficient USDC**
+
+Paid tools require USDC on Base. Check your balance with a Base block explorer (basescan.org). Even $1 covers 100 screenshot API calls at $0.01 each.
+
+**Node version**
+
+`x402-mcp-server` requires Node 18+. Run `node --version` to check. If you're on an older version, update via [nodejs.org](https://nodejs.org) or use a version manager like `nvm`.
+
+**Server not appearing**
+
+After adding the config, restart your MCP client completely. Claude Desktop requires a full quit and reopen — not just closing the chat window.
+
+## Next Steps
+
+- [API Reference](/api-reference/) — full documentation for all 6 tools with parameters, pricing, and examples
+- [Wallet Setup](/wallet-setup/) — detailed wallet configuration guide for crypto newcomers
