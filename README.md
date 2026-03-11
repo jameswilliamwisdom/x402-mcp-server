@@ -1,69 +1,141 @@
 # x402 MCP Server
 
-MCP server for the **x402 API Network** — screenshot capture, PDF extraction, and crypto intelligence tools with automatic USDC micropayments on Base.
+Pay-per-use APIs for AI agents. One npm install, automatic USDC micropayments on Base.
+
+[![License: MIT](https://img.shields.io/github/license/jameswilliamwisdom/x402-mcp-server)](LICENSE)
+[![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
+[![GitHub Stars](https://img.shields.io/github/stars/jameswilliamwisdom/x402-mcp-server?style=social)](https://github.com/jameswilliamwisdom/x402-mcp-server)
 
 ## Tools
 
 | Tool | Description | Price |
 |------|-------------|-------|
-| `x402_network_info` | List all APIs, pricing, and health status | Free |
-| `x402_screenshot` | Capture any URL as base64 image | $0.01 |
-| `x402_pdf_extract` | Extract text from PDF via file upload | $0.01 |
-| `x402_sentiment` | AI sentiment analysis for a cryptocurrency | $0.01 |
-| `x402_market_overview` | Broad crypto market sentiment | $0.05 |
-| `x402_intelligence` | Comprehensive multi-source crypto analysis | $0.10 |
+| `x402_network_info` | List all APIs with pricing and health status | Free |
+| `x402_screenshot` | Capture any URL as a base64 image | $0.01 / capture |
+| `x402_pdf_extract` | Extract text from a PDF via URL | $0.01 / extraction |
+| `x402_sentiment` | Real-time sentiment analysis for a crypto coin | $0.01 / query |
+| `x402_market_overview` | Broad crypto market sentiment overview | $0.05 / query |
+| `x402_intelligence` | Multi-source crypto intelligence (CoinGecko, DeFiLlama, news, GitHub) | $0.10 / query |
 
-## Quick Start
+## Quick Start — Free Mode
 
-### Claude Code
-
-Add to your Claude Code MCP config (`~/.claude/claude_desktop_config.json`):
+No wallet or private key needed. Add the server to your MCP client config:
 
 ```json
 {
   "mcpServers": {
     "x402": {
-      "command": "node",
-      "args": ["/path/to/x402-mcp-server/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"]
+    }
+  }
+}
+```
+
+Free mode limitations:
+- Screenshots limited to example.com, example.org, and httpbin.org
+- PDF extraction limited to first 3 pages
+- Sentiment returns mock data with real market structure
+
+## Quick Start — Paid Mode
+
+Requires a Base wallet funded with USDC.
+
+```json
+{
+  "mcpServers": {
+    "x402": {
+      "command": "npx",
+      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
       "env": {
-        "X402_PRIVATE_KEY": "0x..."
+        "X402_PRIVATE_KEY": "your-private-key-here"
       }
     }
   }
 }
 ```
 
-### Without Payment (Free Test Mode)
+Never commit your private key. Store it in your system environment or a local `.env` file loaded by your shell.
 
-Omit `X402_PRIVATE_KEY` to use free test endpoints:
-- Screenshots limited to example.com, example.org, httpbin.org
-- PDF extraction limited to first 3 pages
-- Sentiment returns mock data with real market info
+You need USDC on the Base network. Base is an Ethereum L2 with low transaction fees. See the [full wallet setup guide](#) for detailed instructions.
 
-### With Payment
+## MCP Client Configs
 
-Set `X402_PRIVATE_KEY` to an Ethereum private key with USDC on Base. Payments are handled automatically via the x402 protocol — no manual transactions needed.
+Omit the `env` block entirely for free mode.
+
+### Claude Desktop
+
+Config file location:
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "x402": {
+      "command": "npx",
+      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "env": {
+        "X402_PRIVATE_KEY": "your-private-key-here"
+      }
+    }
+  }
+}
+```
+
+### Claude Code
+
+```bash
+claude mcp add --transport stdio x402 -- npx -y github:jameswilliamwisdom/x402-mcp-server
+```
+
+Then set `X402_PRIVATE_KEY` in your environment.
+
+### Cursor
+
+Config file: `~/.cursor/mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "x402": {
+      "command": "npx",
+      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "env": {
+        "X402_PRIVATE_KEY": "your-private-key-here"
+      }
+    }
+  }
+}
+```
+
+### Windsurf
+
+Config file: `~/.codeium/windsurf/mcp_config.json`
+
+```json
+{
+  "mcpServers": {
+    "x402": {
+      "command": "npx",
+      "args": ["-y", "github:jameswilliamwisdom/x402-mcp-server"],
+      "env": {
+        "X402_PRIVATE_KEY": "your-private-key-here"
+      }
+    }
+  }
+}
+```
 
 ## How It Works
 
-1. Your agent calls a tool (e.g., `x402_screenshot`)
+1. Your AI agent calls a tool (e.g., `x402_screenshot`)
 2. The MCP server makes an HTTP request to the API
 3. The API responds with `402 Payment Required`
-4. `x402-fetch` automatically signs a USDC payment and retries
+4. `x402-fetch` automatically signs a USDC payment on Base and retries
 5. The API returns the result
 
-## APIs
-
-- **Screenshot API** — `usdc-screenshot-api-production.up.railway.app`
-- **PDF Extraction API** — `pdf-api-production-cf1e.up.railway.app`
-- **Crypto Intelligence API** — `crypto-sentiment-api-production-0ff4.up.railway.app`
-
-## Build
-
-```bash
-npm install
-npm run build
-```
+The payment flow is handled by `x402-fetch` — your agent never needs to manage transactions directly.
 
 ## License
 
