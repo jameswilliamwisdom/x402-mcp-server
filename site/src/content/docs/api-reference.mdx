@@ -1,6 +1,193 @@
 ---
 title: API Reference
-description: Complete reference for all x402 MCP tools and parameters.
+description: Complete reference for all 6 x402 MCP tools — parameters, returns, pricing, and examples.
 ---
 
-Content coming in Plan 03-03.
+import { Aside } from '@astrojs/starlight/components';
+
+{/* SYNC: prices must match src/index.ts and site/src/components/pricing/PricingTable.astro */}
+
+x402 exposes 6 MCP tools. All tools work in free test mode without a wallet. Paid mode unlocks full capabilities with real data for any supported input.
+
+---
+
+## x402_network_info
+
+List all APIs in the x402 network with pricing, status, and capabilities.
+
+**Cost:** Free — no payment required.
+
+*No parameters.*
+
+**Returns:** Network info, wallet status (whether `X402_PRIVATE_KEY` is set), and a list of all APIs with their health status, price, and description.
+
+**Example:**
+
+> "What APIs are available on the x402 network?"
+
+```json
+{
+  "tool": "x402_network_info"
+}
+```
+
+---
+
+## x402_screenshot
+
+Capture a screenshot of any URL and return it as a base64-encoded image.
+
+**Cost:** $0.01 USDC on Base | Free in test mode (limited to example.com, example.org, httpbin.org)
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `url` | string | Yes | — | Full URL to capture (must include https://) |
+| `width` | integer | No | `1280` | Viewport width in pixels (320–3840) |
+| `height` | integer | No | `720` | Viewport height in pixels (240–2160) |
+| `full_page` | boolean | No | `false` | Capture the full scrollable page |
+| `format` | string | No | `"png"` | Image format: `png`, `jpeg`, or `webp` |
+
+**Returns:** Base64-encoded image data in the specified format.
+
+<Aside type="note">
+Free test mode is limited to `example.com`, `example.org`, and `httpbin.org`. Set `X402_PRIVATE_KEY` to capture any URL.
+</Aside>
+
+**Example:**
+
+> "Take a screenshot of stripe.com's pricing page at 1440px wide"
+
+```json
+{
+  "tool": "x402_screenshot",
+  "arguments": {
+    "url": "https://stripe.com/pricing",
+    "width": 1440,
+    "height": 900
+  }
+}
+```
+
+---
+
+## x402_pdf_extract
+
+Extract text content from a PDF document via URL.
+
+**Cost:** $0.01 USDC on Base | Free in test mode
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `pdf_url` | string | Yes | — | Full URL of the PDF to extract text from |
+
+**Returns:** Extracted text content, page count, and document metadata.
+
+**Example:**
+
+> "Extract the text from this SEC filing PDF: https://example.com/filing.pdf"
+
+```json
+{
+  "tool": "x402_pdf_extract",
+  "arguments": {
+    "pdf_url": "https://example.com/annual-report.pdf"
+  }
+}
+```
+
+---
+
+## x402_sentiment
+
+Get real-time crypto sentiment analysis for a specific coin.
+
+**Cost:** $0.01 USDC on Base | Free in test mode
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `coin` | string | Yes | — | Cryptocurrency ticker symbol (e.g., `BTC`, `ETH`, `SOL`) — 1–10 alphanumeric characters |
+
+**Returns:** Sentiment score (−1 to 1), confidence level, data sources, and analysis summary.
+
+**Example:**
+
+> "What's the current sentiment for Ethereum?"
+
+```json
+{
+  "tool": "x402_sentiment",
+  "arguments": {
+    "coin": "ETH"
+  }
+}
+```
+
+---
+
+## x402_market_overview
+
+Get a broad crypto market sentiment overview covering major coins and trends.
+
+**Cost:** $0.05 USDC on Base | Free in test mode
+
+*No parameters.*
+
+**Returns:** Market-wide sentiment data, top movers, and aggregate trend analysis across the crypto market.
+
+**Example:**
+
+> "Give me a broad overview of the crypto market right now"
+
+```json
+{
+  "tool": "x402_market_overview"
+}
+```
+
+---
+
+## x402_intelligence
+
+Get comprehensive multi-source intelligence analysis for a cryptocurrency.
+
+**Cost:** $0.10 USDC on Base | Free in test mode
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `coin` | string | Yes | — | Cryptocurrency ticker symbol (e.g., `BTC`, `ETH`, `SOL`) — 1–10 alphanumeric characters |
+
+**Returns:** Comprehensive analysis synthesized from multiple data sources: CoinGecko (market data), DeFiLlama (TVL and DeFi metrics), CryptoPanic (news), Fear & Greed Index (market psychology), and GitHub (development activity). Includes AI-generated actionable insights.
+
+<Aside type="tip">
+This is the premium tier. Use `x402_sentiment` ($0.01) for quick sentiment checks. Use `x402_intelligence` when you need the full picture — market, news, DeFi, and development activity in one response.
+</Aside>
+
+**Example:**
+
+> "Give me a deep intelligence report on Bitcoin"
+
+```json
+{
+  "tool": "x402_intelligence",
+  "arguments": {
+    "coin": "BTC"
+  }
+}
+```
+
+---
+
+## Pricing Summary
+
+| Tool | Price | Free Test Mode |
+|------|-------|----------------|
+| `x402_network_info` | Free | Yes |
+| `x402_screenshot` | $0.01 USDC | Yes — example.com, example.org, httpbin.org only |
+| `x402_pdf_extract` | $0.01 USDC | Yes |
+| `x402_sentiment` | $0.01 USDC | Yes |
+| `x402_market_overview` | $0.05 USDC | Yes |
+| `x402_intelligence` | $0.10 USDC | Yes |
+
+Payments are settled on Base (L2 Ethereum) in USDC. The x402 protocol handles payment negotiation transparently — your agent makes the request, the payment is authorized, and the data comes back in a single interaction.
+
+See [Getting Started](/getting-started/) to configure your wallet and make your first paid call.
