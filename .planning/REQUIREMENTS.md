@@ -100,41 +100,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCRAPE-01 | — | Pending |
-| SCRAPE-02 | — | Pending |
-| SCRAPE-03 | — | Pending |
-| SCRAPE-04 | — | Pending |
-| SCRAPE-05 | — | Pending |
-| EMAIL-01 | — | Pending |
-| EMAIL-02 | — | Pending |
-| EMAIL-03 | — | Pending |
-| EMAIL-04 | — | Pending |
-| EMAIL-05 | — | Pending |
-| SEARCH-01 | — | Pending |
-| SEARCH-02 | — | Pending |
-| SEARCH-03 | — | Pending |
-| SEARCH-04 | — | Pending |
-| SEARCH-05 | — | Pending |
-| CONV-01 | — | Pending |
-| CONV-02 | — | Pending |
-| CONV-03 | — | Pending |
-| CONV-04 | — | Pending |
-| CONV-05 | — | Pending |
-| TRANS-01 | — | Pending |
-| TRANS-02 | — | Pending |
-| TRANS-03 | — | Pending |
-| TRANS-04 | — | Pending |
-| TRANS-05 | — | Pending |
-| TRANS-06 | — | Pending |
-| MCP-01 | — | Pending |
-| MCP-02 | — | Pending |
-| MCP-03 | — | Pending |
+| SCRAPE-01 | 5 | Pending |
+| SCRAPE-02 | 5 | Pending |
+| SCRAPE-03 | 5 | Pending |
+| SCRAPE-04 | 5 | Pending |
+| SCRAPE-05 | 5 | Pending |
+| EMAIL-01 | 8 | Pending |
+| EMAIL-02 | 8 | Pending |
+| EMAIL-03 | 8 | Pending |
+| EMAIL-04 | 8 | Pending |
+| EMAIL-05 | 8 | Pending |
+| SEARCH-01 | 7 | Pending |
+| SEARCH-02 | 7 | Pending |
+| SEARCH-03 | 7 | Pending |
+| SEARCH-04 | 7 | Pending |
+| SEARCH-05 | 7 | Pending |
+| CONV-01 | 6 | Pending |
+| CONV-02 | 6 | Pending |
+| CONV-03 | 6 | Pending |
+| CONV-04 | 6 | Pending |
+| CONV-05 | 6 | Pending |
+| TRANS-01 | 9 | Pending |
+| TRANS-02 | 9 | Pending |
+| TRANS-03 | 9 | Pending |
+| TRANS-04 | 9 | Pending |
+| TRANS-05 | 9 | Pending |
+| TRANS-06 | 9 | Pending |
+| MCP-01 | 10 | Pending |
+| MCP-02 | 10 | Pending |
+| MCP-03 | 10 | Pending |
 
 **Coverage:**
 - v1.1 requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 ⚠️ (pending roadmap creation)
+- Mapped to phases: 29
+- Unmapped: 0 (100% coverage)
 
 ---
 *Requirements defined: 2026-03-12*
-*Last updated: 2026-03-12 — initial definition*
+*Last updated: 2026-03-12 — traceability table filled, 100% coverage, phases 5-10*
