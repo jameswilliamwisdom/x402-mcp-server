@@ -50,7 +50,7 @@ echo ""
 echo "==> [4/7] Writing nginx site config..."
 ssh "$SERVER" "cat > /tmp/x402-network.conf" << 'NGINXCONF'
 server {
-    listen 80;
+    listen 8888;
     server_name _;
 
     root /var/www/x402-network;
@@ -93,7 +93,7 @@ server {
 }
 NGINXCONF
 
-ssh -t "$SERVER" "sudo mv /tmp/x402-network.conf /usr/local/etc/nginx/servers/x402-network.conf"
+ssh -t "$SERVER" "sudo mkdir -p /usr/local/etc/nginx/servers && sudo mv /tmp/x402-network.conf /usr/local/etc/nginx/servers/x402-network.conf"
 echo "    nginx site config written to /usr/local/etc/nginx/servers/x402-network.conf"
 
 echo ""
@@ -129,7 +129,7 @@ PLIST
 
 ssh -t "$SERVER" "sudo mv /tmp/homebrew.mxcl.nginx.plist /Library/LaunchDaemons/ && sudo chown root:wheel /Library/LaunchDaemons/homebrew.mxcl.nginx.plist"
 echo "    LaunchDaemon plist installed at /Library/LaunchDaemons/homebrew.mxcl.nginx.plist"
-echo "    (No UserName key — daemon runs as root, required for port 80)"
+echo "    (Port 8888 — AdGuard Home occupies port 80)"
 
 echo ""
 echo "==> [6/7] Validating nginx config and starting nginx..."
@@ -139,22 +139,22 @@ ssh -t "$SERVER" "sudo launchctl load -w /Library/LaunchDaemons/homebrew.mxcl.ng
 echo "    nginx config valid. nginx started via launchctl."
 
 echo ""
-echo "==> [7/7] Verifying nginx is serving on port 80..."
+echo "==> [7/7] Verifying nginx is serving on port 8888..."
 # Brief pause for nginx to come up
 sleep 2
-STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://10.0.0.2/")
-if [[ "$STATUS" == "200" || "$STATUS" == "404" ]]; then
-    echo "PASS: nginx is responding on http://10.0.0.2 (status: $STATUS)"
+STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://10.0.0.2:8888/")
+if [[ "$STATUS" == "200" || "$STATUS" == "403" || "$STATUS" == "404" ]]; then
+    echo "PASS: nginx is responding on http://10.0.0.2:8888 (status: $STATUS)"
 else
     echo "FAIL: nginx did not respond as expected (status: $STATUS)"
     echo "      Check server logs: ssh $SERVER 'sudo tail -20 /usr/local/var/log/nginx/error.log'"
     echo "      Validate config:   ssh $SERVER 'sudo /usr/local/opt/nginx/bin/nginx -t'"
-    echo "      Check port 80:     ssh $SERVER 'sudo lsof -i :80'"
+    echo "      Check port 8888:   ssh $SERVER 'sudo lsof -i :8888'"
     exit 1
 fi
 
 echo ""
-echo "Server setup complete. nginx is live at http://10.0.0.2"
+echo "Server setup complete. nginx is live at http://10.0.0.2:8888"
 echo "Web root: /var/www/x402-network/ (empty — run deploy.sh next)"
 echo ""
 echo "Useful commands:"
