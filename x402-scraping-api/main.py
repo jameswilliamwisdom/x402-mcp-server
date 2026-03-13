@@ -1,0 +1,604 @@
+"""
+x402 Scraping API
+Scrape any URL and return structured JSON — markdown text, links, tables, images, and metadata.
+Playwright-powered for JS-rendered pages. SSRF-protected. Gated behind x402 USDC payment.
+"""
+
+import os
+import json
+import socket
+import ipaddress
+import asyncio
+import time
+import logging
+from io import StringIO
+from typing import Optional, Annotated
+from contextlib import asynccontextmanager
+from urllib.parse import urlparse, urljoin
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from pydantic_core import Url
+from pydantic import UrlConstraints
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from fastapi_x402 import init_x402, pay
+from playwright.async_api import async_playwright, Browser
+
+import trafilatura
+from bs4 import BeautifulSoup
+import pandas as pd
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+
+
+# =============================================================================
+# Logger and Constants
+# =============================================================================
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("x402-scraping")
+
+TOTAL_BUDGET_S = 8.0
+MAX_RESPONSE_BYTES = 5_000_000
+ALLOWED_SCHEMES = {"http", "https"}
+BLOCKED_RESOURCE_TYPES = {"image", "media", "font", "websocket"}
+
+FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "fixture.json")
+
+
+# =============================================================================
+# SSRF Validation
+# =============================================================================
+
+def _assert_ip_public(ip) -> None:
+    """Raise ValueError if the IP is in a blocked (non-public) range."""
+    # Unwrap IPv4-mapped IPv6 (e.g. ::ffff:192.168.1.1) before checking
+    if isinstance(ip, ipaddress.IPv6Address) and ip.ipv4_mapped is not None:
+        _assert_ip_public(ip.ipv4_mapped)
+        return
+    if (ip.is_private or ip.is_loopback or ip.is_link_local
+            or ip.is_multicast or ip.is_reserved or ip.is_unspecified):
+        raise ValueError(f"URL resolves to blocked IP range: {ip}")
+
+
+def validate_url_for_ssrf(url: str) -> None:
+    """Raises ValueError if the URL targets a private/internal resource.
+
+    Uses getaddrinfo (not gethostbyname) to catch both IPv4 and IPv6 records.
+    Checks ALL resolved addresses — not just the first.
+    """
+    parsed = urlparse(url)
+
+    if parsed.scheme not in ALLOWED_SCHEMES:
+        raise ValueError(f"Scheme '{parsed.scheme}' not allowed; only http/https accepted")
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise ValueError("No hostname in URL")
+
+    # Reject bare IP literals that are already private (before DNS resolution)
+    try:
+        direct_ip = ipaddress.ip_address(hostname)
+        _assert_ip_public(direct_ip)
+        return  # Valid public IP literal — no DNS needed
+    except ValueError as e:
+        # Either it's a private IP (re-raise) or not an IP literal (continue to DNS)
+        if "blocked IP range" in str(e):
+            raise
+        # Not an IP literal — fall through to DNS resolution
+
+    try:
+        records = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as e:
+        raise ValueError(f"DNS resolution failed: {e}")
+
+    if not records:
+        raise ValueError("DNS resolution returned no addresses")
+
+    for record in records:
+        ip_str = record[4][0].split("%")[0]  # Strip IPv6 scope ID
+        try:
+            ip = ipaddress.ip_address(ip_str)
+        except ValueError:
+            raise ValueError(f"Could not parse resolved IP: {ip_str!r}")
+        _assert_ip_public(ip)
+
+
+# =============================================================================
+# Playwright Route Handlers
+# =============================================================================
+
+BLOCKED_RESOURCE_TYPES = {"image", "media", "font", "websocket"}
+
+
+async def handle_route(route):
+    """Block non-content resource types to save memory and reduce load time.
+
+    Does NOT block 'script' — required for JS rendering (SCRAPE-02, SCRAPE-03).
+    Registered on context (not page) to avoid memory leaks.
+    """
+    if route.request.resource_type in BLOCKED_RESOURCE_TYPES:
+        await route.abort()
+    else:
+        await route.continue_()
+
+
+async def abort_private_navigation(route):
+    """Abort document-level navigations to private IPs (redirect-chain SSRF protection).
+
+    Pre-flight SSRF check validates the input URL only. This handler catches
+    redirect chains that land on private IPs after payment has been accepted.
+    Registered on context (not page) to avoid memory leaks.
+    """
+    if route.request.resource_type == "document":
+        try:
+            validate_url_for_ssrf(route.request.url)
+        except ValueError:
+            await route.abort("blockedbyclient")
+            return
+    await route.continue_()
+
+
+# =============================================================================
+# Browser Lifecycle
+# =============================================================================
+
+browser: Optional[Browser] = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage browser lifecycle — one browser for the process lifetime."""
+    global browser
+
+    logger.info("Starting Playwright Chromium browser...")
+    pw = await async_playwright().start()
+    browser = await pw.chromium.launch(
+        headless=True,
+        args=[
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+        ],
+    )
+
+    def on_browser_disconnect():
+        global browser
+        browser = None
+        logger.error(
+            "Playwright browser disconnected — Railway ON_FAILURE policy will restart container"
+        )
+
+    browser.on("disconnected", on_browser_disconnect)
+    logger.info("Browser ready")
+
+    yield
+
+    if browser and browser.is_connected():
+        await browser.close()
+    logger.info("Browser closed — shutdown complete")
+
+
+# =============================================================================
+# FastAPI App + Middleware
+# =============================================================================
+
+app = FastAPI(
+    title="x402 Scraping API",
+    description="Scrape any URL and return structured JSON. Powered by Playwright + x402 USDC payment.",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# x402 payment middleware — added FIRST so it runs LAST (LIFO)
+init_x402(app, network="base")
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class SSRFMiddleware(BaseHTTPMiddleware):
+    """Pre-payment SSRF validation.
+
+    Added AFTER init_x402() — LIFO ordering means this runs FIRST, before payment.
+    SSRF-blocked requests return 400 with no charge to the caller.
+    """
+
+    async def dispatch(self, request, call_next):
+        if request.method == "POST" and request.url.path == "/scrape":
+            try:
+                body_bytes = await request.body()
+                body = json.loads(body_bytes)
+                url = body.get("url", "")
+                if url:
+                    validate_url_for_ssrf(str(url))
+            except ValueError as e:
+                return JSONResponse(
+                    status_code=400,
+                    content={"detail": f"SSRF validation failed: {e}"},
+                )
+            except (json.JSONDecodeError, Exception):
+                # Let Pydantic handle malformed bodies
+                pass
+        return await call_next(request)
+
+
+# SSRFMiddleware added SECOND — LIFO means it runs FIRST (before payment check)
+app.add_middleware(SSRFMiddleware)
+
+
+# =============================================================================
+# Rate Limiting
+# =============================================================================
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Try again later."},
+    )
+
+
+# =============================================================================
+# Request Models
+# =============================================================================
+
+BoundedHttpUrl = Annotated[
+    Url,
+    UrlConstraints(allowed_schemes=["http", "https"], max_length=2048),
+]
+
+
+class ScrapeRequest(BaseModel):
+    url: BoundedHttpUrl = Field(
+        ..., description="URL to scrape (must be http/https, max 2048 chars)"
+    )
+    wait_for: Optional[str] = Field(
+        None,
+        max_length=500,
+        description="CSS selector to wait for before extracting — for SPAs (e.g. '.article-body')",
+    )
+
+
+# =============================================================================
+# Content Detection and Extraction
+# =============================================================================
+
+def detect_block(response, html: str) -> Optional[str]:
+    """Return error code if the page appears to be blocked, None otherwise.
+
+    Checks HTTP status codes that typically indicate blocks, plus Cloudflare
+    challenge markers in the HTML body.
+    """
+    status = response.status if response else None
+    if status in (403, 429, 503):
+        return "blocked_by_protection"
+    # Check first 2000 chars for Cloudflare / WAF challenge markers
+    head = html[:2000]
+    if (
+        "Just a moment" in head
+        or "cf-browser-verification" in head
+        or "Access denied" in html[:500]
+    ):
+        return "blocked_by_protection"
+    return None
+
+
+def extract_content(html: str, page_url: str) -> dict:
+    """Full extraction pipeline: markdown, links, images, tables, metadata.
+
+    Uses trafilatura for main content + metadata, BeautifulSoup for links/images,
+    and pandas for tables (handles rowspan/colspan correctly).
+    """
+    warnings = []
+
+    # --- 1. Main content → markdown (trafilatura) ---
+    markdown = trafilatura.extract(
+        html,
+        output_format="markdown",
+        include_links=False,    # Experimental in trafilatura — use BS4 instead
+        include_tables=False,   # Tables handled by pandas below
+        url=page_url,
+        no_fallback=False,
+    )
+
+    if markdown is None:
+        warnings.append("no_content_extracted")
+    elif len(markdown.encode("utf-8")) > MAX_RESPONSE_BYTES:
+        # Truncate by bytes (not characters) — correct for multi-byte Unicode
+        encoded = markdown.encode("utf-8")
+        markdown = encoded[:MAX_RESPONSE_BYTES].decode("utf-8", errors="ignore")
+        warnings.append("truncated")
+
+    # --- 2. Metadata (trafilatura) ---
+    meta = trafilatura.extract_metadata(html, default_url=page_url)
+    metadata = {
+        "title": meta.title if meta else None,
+        "description": meta.description if meta else None,
+        "og_title": meta.og_title if meta and hasattr(meta, "og_title") else None,
+        "og_image": meta.image if meta else None,
+        "canonical_url": meta.url if meta else None,
+        "language": meta.language if meta else None,
+        # status_code, content_type, content_language, x_robots_tag added by caller
+    }
+
+    # --- 3. Links — BeautifulSoup on raw HTML ---
+    soup = BeautifulSoup(html, "lxml")
+    links = []
+    for tag in soup.find_all("a", href=True):
+        href = tag.get("href", "").strip()
+        if not href or href.startswith(("#", "javascript:", "mailto:", "tel:")):
+            continue
+        links.append({"url": urljoin(page_url, href), "text": tag.get_text(strip=True)})
+
+    # --- 4. Images — BeautifulSoup on raw HTML ---
+    images = []
+    for tag in soup.find_all("img", src=True):
+        images.append({
+            "src": urljoin(page_url, tag.get("src", "")),
+            "alt": tag.get("alt", ""),
+        })
+
+    # --- 5. Tables — pandas (handles rowspan/colspan correctly) ---
+    tables = []
+    try:
+        dfs = pd.read_html(StringIO(html))
+        for df in dfs:
+            df.columns = [str(c) for c in df.columns]
+            tables.append({
+                "headers": list(df.columns),
+                "rows": df.fillna("").values.tolist(),
+            })
+    except ValueError:
+        pass  # No tables found — not an error
+
+    return {
+        "markdown": markdown,
+        "links": links,
+        "images": images,
+        "tables": tables,
+        "metadata": metadata,
+        "warnings": warnings,
+    }
+
+
+# =============================================================================
+# Core Scrape Function
+# =============================================================================
+
+async def scrape_page(url: str, wait_for: Optional[str]) -> dict:
+    """Launch a browser context, navigate, wait if needed, extract HTML.
+
+    Shared 8-second budget across goto() + wait_for_selector().
+    Context is always closed in finally — browser is never closed here.
+    """
+    global browser
+
+    if browser is None or not browser.is_connected():
+        raise HTTPException(
+            status_code=503,
+            detail="Browser unavailable — container is restarting. Try again in ~15 seconds.",
+        )
+
+    start = time.monotonic()
+
+    context = await browser.new_context(
+        user_agent=(
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+        ),
+        permissions=[],
+        service_workers="block",
+    )
+
+    # Register route blocking BEFORE creating page (must be active before goto)
+    await context.route("**/*", handle_route)
+    # Register redirect-chain SSRF intercept on context (not page — avoids memory leak)
+    await context.route("**/*", abort_private_navigation)
+
+    try:
+        page = await context.new_page()
+
+        # Allocate remaining budget to page.goto()
+        elapsed = time.monotonic() - start
+        goto_timeout = max(1000, int((TOTAL_BUDGET_S - elapsed) * 1000))
+        response = await page.goto(url, wait_until="domcontentloaded", timeout=goto_timeout)
+
+        status_code = response.status if response else None
+
+        # Allocate remaining budget to wait_for_selector()
+        if wait_for:
+            elapsed = time.monotonic() - start
+            selector_timeout = max(500, int((TOTAL_BUDGET_S - elapsed) * 1000))
+            await page.wait_for_selector(wait_for, timeout=selector_timeout)
+
+        html = await page.content()
+        final_url = page.url
+
+        # Sanitize final_url — data: / blob: URLs are not useful to callers
+        extra_warnings = []
+        if final_url.startswith(("data:", "blob:")):
+            final_url = url
+            extra_warnings.append("navigation_to_non_http_url")
+
+        return {
+            "html": html,
+            "final_url": final_url,
+            "status_code": status_code,
+            "response": response,
+            "extra_warnings": extra_warnings,
+        }
+
+    finally:
+        await context.close()  # Always close context; NEVER close browser
+
+
+# =============================================================================
+# Routes
+# =============================================================================
+
+def load_fixture() -> dict:
+    """Load and return fixture.json content."""
+    with open(FIXTURE_PATH, "r") as f:
+        return json.load(f)
+
+
+@app.get("/")
+async def info():
+    """Service info and pricing."""
+    return {
+        "service": "x402-scraping-api",
+        "price": "$0.02",
+        "test": "/scrape/test",
+        "description": "Scrape any URL and return structured JSON: markdown, links, tables, images, metadata",
+        "endpoints": {
+            "POST /scrape": "Scrape a URL (requires x402 USDC payment: $0.02)",
+            "GET /scrape/test": "Free fixture response — demonstrates full response schema",
+            "GET /health": "Health check (browser status)",
+        },
+    }
+
+
+@app.get("/health")
+async def health():
+    """Health check — always returns HTTP 200. Body includes browser status."""
+    return {
+        "status": "healthy",
+        "browser": browser is not None and browser.is_connected(),
+    }
+
+
+@app.get("/scrape/test")
+@limiter.limit("100/hour")
+async def scrape_test(request: Request):
+    """Free test endpoint — returns fixture data (no live scraping, no payment required).
+
+    Rate limited at 100 requests/hour per IP.
+    Use POST /scrape with x402 payment for live page scraping.
+    """
+    return load_fixture()
+
+
+@app.post("/scrape")
+@pay("$0.02")
+async def scrape(request: Request, body: ScrapeRequest):
+    """Scrape a URL and return structured JSON.
+
+    Returns: markdown (main content, nav/ads stripped), links [{url, text}],
+    tables [{headers, rows}], images [{src, alt}], metadata (title, description,
+    og_title, og_image, canonical_url, language, status_code, content_type,
+    content_language, x_robots_tag), final_url, warnings.
+
+    Pricing: $0.02 USDC per scrape (Base network).
+    SSRF protection: private/loopback IPs rejected before payment.
+    """
+    global browser
+
+    if browser is None or not browser.is_connected():
+        raise HTTPException(
+            status_code=503,
+            detail="Browser unavailable — container is restarting. Try again in ~15 seconds.",
+        )
+
+    input_url = str(body.url)
+
+    try:
+        page_data = await scrape_page(input_url, body.wait_for)
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_str = str(e)
+        if "timeout" in error_str.lower() or "TimeoutError" in type(e).__name__:
+            return {
+                "success": False,
+                "url": input_url,
+                "error": "timeout",
+                "detail": f"Page load timed out after {TOTAL_BUDGET_S}s. Try with wait_for=None or a simpler URL.",
+                "warnings": ["timeout"],
+            }
+        logger.error(f"Playwright error scraping {input_url}: {e}")
+        return {
+            "success": False,
+            "url": input_url,
+            "error": "browser_error",
+            "detail": str(e),
+            "warnings": [],
+        }
+
+    html = page_data["html"]
+    final_url = page_data["final_url"]
+    status_code = page_data["status_code"]
+    response = page_data["response"]
+    extra_warnings = page_data["extra_warnings"]
+
+    # Extract response headers for metadata
+    content_type = None
+    content_language = None
+    x_robots_tag = None
+    if response:
+        headers = response.headers
+        content_type = headers.get("content-type")
+        content_language = headers.get("content-language")
+        x_robots_tag = headers.get("x-robots-tag")
+
+    # Reject non-HTML content types (PDF, images, etc.)
+    if content_type and not any(
+        t in content_type.lower()
+        for t in ("text/html", "application/xhtml", "text/xml", "application/xml")
+    ):
+        return {
+            "success": False,
+            "url": input_url,
+            "final_url": final_url,
+            "error": "non_html_content",
+            "detail": f"Content-Type '{content_type}' is not HTML. Use other x402 APIs for non-HTML content.",
+            "warnings": [],
+        }
+
+    # Check for Cloudflare / WAF blocks
+    block_error = detect_block(response, html)
+    if block_error:
+        return {
+            "success": False,
+            "url": input_url,
+            "final_url": final_url,
+            "error": block_error,
+            "detail": "Page is protected by a firewall or anti-bot system (Cloudflare, CAPTCHA, etc.).",
+            "warnings": [],
+        }
+
+    # Extract content
+    extracted = extract_content(html, final_url)
+    warnings = extracted["warnings"] + extra_warnings
+
+    # Merge HTTP headers into metadata
+    extracted["metadata"]["status_code"] = status_code
+    extracted["metadata"]["content_type"] = content_type
+    extracted["metadata"]["content_language"] = content_language
+    extracted["metadata"]["x_robots_tag"] = x_robots_tag
+
+    return {
+        "success": True,
+        "url": input_url,
+        "final_url": final_url,
+        "markdown": extracted["markdown"],
+        "links": extracted["links"],
+        "tables": extracted["tables"],
+        "images": extracted["images"],
+        "metadata": extracted["metadata"],
+        "warnings": warnings,
+    }
