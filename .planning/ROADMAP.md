@@ -83,8 +83,12 @@ Plans:
 
 #### Phase 7: Web Search API
 
-**Status:** Pending
+**Status:** Planned (2/2 plans)
 **Requirements:** SEARCH-01, SEARCH-02, SEARCH-03, SEARCH-04, SEARCH-05
+
+Plans:
+- [ ] 07-01-PLAN.md — Build complete search service (main.py, Dockerfile, config, fixture)
+- [ ] 07-02-PLAN.md — Docker validation, Railway deployment, production verification
 
 **What ships:** A new Railway service (`x402-search-api`) wrapping the Tavily search API. Accepts a query string and returns ranked results (title, URL, snippet, relevance score). `include_answer` requests a Tavily-synthesized direct answer alongside results. `include_domains`/`exclude_domains` filter results to specific sources. Per-wallet daily query limit prevents cost spikes.
 
