@@ -1,172 +1,353 @@
 # Stack Research
 
-**Domain:** npm publishing + Astro brand/docs site for an MCP server package
-**Researched:** 2026-03-09
+**Domain:** v1.1 Universal Utility APIs — 5 new backend services + MCP tool additions
+**Researched:** 2026-03-12
 **Confidence:** HIGH
 
 ## Context
 
-The MCP server is already built and working (TypeScript, ESM, `@modelcontextprotocol/sdk ^1.11.0`, `viem ^2.0.0`, `x402-fetch ^1.1.0`). This research covers ONLY what's needed to add:
+The existing stack is locked in and working:
+- **MCP server:** TypeScript, `@modelcontextprotocol/sdk ^1.11.0`, `viem ^2.0.0`, `x402-fetch ^1.1.0`, `zod ^4.3.6`
+- **API pattern:** Python/FastAPI on Railway with `fastapi-x402` (proven with screenshot, PDF, crypto sentiment)
+- **Home server:** macOS Monterey x86_64 at 10.0.0.2 (nginx, for transcription only)
 
-1. A publishable, well-formed npm package (the MCP server itself)
-2. An Astro brand + docs site, self-hosted as static output
-
-No new runtime dependencies are needed for the MCP server. All additions are either `package.json` config changes, dev tools, or the separate brand site.
+This research covers ONLY what's new for the 5 new APIs. Do not re-research the existing stack.
 
 ---
 
-## Part 1: npm Publishing
+## API 1: Web Scraping (Railway)
 
-### package.json Changes Required
+**Approach:** Python/FastAPI — same pattern as screenshot and PDF APIs.
 
-The current `package.json` is missing several fields required for a properly published npm package.
+### Python Backend Libraries
 
-**Add:**
-- `files` — explicit allowlist to prevent leaking source, `.env`, `.planning`, etc.
-- `engines` — signal Node version requirement
-- `prepublishOnly` — auto-build before publish
-- `repository`, `homepage`, `bugs` — registry metadata
-- `author` — attribution
+| Library | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| `playwright` | `^1.58.0` | Headless browser, full JS rendering | Matches the existing screenshot API approach; handles SPAs and JS-heavy sites; asyncio-native |
+| `beautifulsoup4` | `^4.12.3` | HTML parsing + structured extraction | Industry standard; lxml backend; use alongside playwright for post-render parsing |
+| `lxml` | `^5.3.0` | Fast XML/HTML parser backend for BS4 | Faster than html.parser, required as BS4 backend for production use |
 
-**Existing `bin` entry is correct.** The `dist/index.js` file must have `#!/usr/bin/env node` as its first line — TypeScript's compiled output doesn't add this automatically. Verify after `tsc` build.
+**Note on Cheerio:** The original plan mentions Cheerio, but this runs on the Python/FastAPI backend on Railway, not in the MCP server TypeScript layer. Use BeautifulSoup4 with lxml instead. Cheerio would only apply if the scraper were reimplemented in Node.js.
 
-**`files` field recommendation:**
-```json
-"files": ["dist", "README.md", "LICENSE"]
-```
+### Installation
 
-This explicitly excludes: `src/`, `.planning/`, `node_modules/`, `.env*`, `tsconfig.json`.
-
-**`prepublishOnly` script:**
-```json
-"prepublishOnly": "npm run build"
-```
-
-Runs TypeScript compilation automatically before `npm publish`.
-
-### Dev Tools for Publishing
-
-| Tool | Version | Purpose | Why |
-|------|---------|---------|-----|
-| `publint` | `^0.3.18` | Validate package exports before publishing | Catches mismatches between `package.json` fields and actual `dist/` output — prevents publishing a broken package |
-
-**Run before every publish:**
 ```bash
-npx publint
+pip install playwright beautifulsoup4 lxml
+playwright install chromium
 ```
 
-Validates `main`, `exports`, `bin` fields match what's in `dist/`. Zero config.
+### Pattern Match
 
-### Shebang Requirement
-
-TypeScript's `tsc` does NOT preserve `#!/usr/bin/env node` in compiled output. The source file `src/index.ts` already has this line at top. Verify `dist/index.js` starts with it after build. If not, add a postbuild script:
-
-```json
-"postbuild": "node -e \"const fs=require('fs');const f='dist/index.js';const c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/usr/bin/env node'))fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);\""
-```
-
-### Security Checklist (No New Packages)
-
-- `X402_PRIVATE_KEY` is env-only — confirmed in current code, nothing to add
-- `.npmignore` is optional since `files` field takes precedence when both exist — use `files`, not `.npmignore`
-- Run `npm pack --dry-run` before first publish to audit exact file list
+Follows existing screenshot API pattern — stateless POST with `url` param, returns structured JSON. Add `/test/scrape` free endpoint limited to safe domains.
 
 ---
 
-## Part 2: Astro Brand + Docs Site
+## API 2: Email Sending (Railway)
 
-The brand site is a **separate project** — it does not live inside `x402-mcp-server/`. Suggested location: `~/projects/x402-brand-site/` or a `site/` subdirectory at the repo root.
+**Decision:** Resend. Already chosen in PROJECT.md. No research needed for the choice, only for the implementation library.
 
-### Core Technologies
+### Python Backend Libraries
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| `astro` | `^5.18.0` | Static site framework | Latest stable (5.18.0, released Feb 2026); generates pure static HTML+CSS+JS with zero JS by default; deploys as a file drop to any web server; no Node runtime needed on home server |
-| `@astrojs/starlight` | `^0.37.6` | Documentation theme | Official Astro docs theme — includes search, nav, code highlighting, dark mode, mobile-responsive; zero config for a docs site; pairs naturally with Astro 5 |
+| Library | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| `resend` | `^2.x` (latest ~Feb 2026) | Official Resend Python SDK | Type-hinted SDK 2.0; `pip install resend`; simple `resend.Emails.send({...})` API |
 
-**Choose one path:**
+### Installation
 
-**Path A — Marketing + Docs combined (Starlight):**
-Use Starlight as the base. It handles docs pages natively and supports custom landing page components. Good if the docs ARE the primary pitch. Most MCP server registries link directly to docs.
+```bash
+pip install resend
+```
 
-**Path B — Marketing-first (plain Astro + Tailwind):**
-Custom Astro site for the brand pitch, with `/docs` section as Markdown pages. More design control. More work.
+### Environment Variables
 
-**Recommendation: Path A (Starlight).** The target audience is developers. Starlight's built-in search, code highlighting, and nav are immediately useful. A custom landing page component can handle the marketing pitch above the docs fold.
+```bash
+RESEND_API_KEY=re_xxx
+```
 
-### Supporting Libraries
+### Integration
+
+```python
+import resend
+
+resend.api_key = os.environ["RESEND_API_KEY"]
+r = resend.Emails.send({
+    "from": "api@x402.network",
+    "to": params["to"],
+    "subject": params["subject"],
+    "html": params["body"],
+})
+```
+
+Stateless — no domain config state needed if using a verified Resend domain. Price cap: $0.01 per send.
+
+---
+
+## API 3: Web Search (Railway) — Decision Required
+
+This is the only API where the backend provider is undecided. Three candidates: SerpAPI, Brave Search API, Tavily.
+
+### Search Backend Comparison
+
+| Factor | SerpAPI | Brave Search | Tavily |
+|--------|---------|--------------|--------|
+| **What it is** | SERP scraper proxy — wraps Google, Bing, 40+ engines | Independent search index, privacy-first, no tracking | AI-native search API — aggregates sources, returns LLM-ready snippets + citations |
+| **Free tier** | 250 searches/month | $5 monthly credits (~1,000 queries); free tier dropped Feb 12, 2026 | 1,000 credits/month, no credit card required |
+| **Pay-as-you-go** | No PAYG — subscription only | $3–$5 CPM ($3–$5 per 1,000 queries) | $0.008/credit ($8 per 1,000 basic searches) |
+| **Subscription cost** | $75/month for 5,000 searches ($15/1k); credits expire monthly | None required — metered billing from $3 CPM | $0.005–$0.0075/credit at scale; no rollover |
+| **Rate limits** | Hourly cap: 20% of plan volume (1,000/hr on $75 plan) | Plan-dependent, not publicly documented | Not publicly documented per tier |
+| **Result quality** | Raw SERP data — Google/Bing rankings, no summarization | Independent index — unbiased from Google/Bing; good freshness | Aggregated + AI-ranked; returns clean snippets, no raw SERP noise |
+| **LLM/agent fit** | Poor — returns raw HTML-ish SERP data; requires your own parsing | Moderate — clean JSON results, but still raw search hits | Best — purpose-built for LLM consumption; returns structured excerpts |
+| **Python SDK** | `google-search-results` (pip) | No official SDK; simple REST GET | `tavily-python` (pip), `>=3.8` |
+| **Dependency risk** | High — depends on Google not blocking; ToS risk | Low — own index, stable | Low — own infrastructure |
+| **Gotcha** | Unused credits don't roll over on any plan; forces over-provisioning | Attribution required for free credits | Credits don't roll over monthly |
+
+### Recommendation: Tavily
+
+**Use Tavily** for the web search API backend.
+
+**Why:**
+1. **LLM-ready output by design.** Tavily returns structured JSON with `title`, `url`, `content` (relevant excerpt), and `score` — exactly what an MCP tool should hand back to an agent. No parsing layer needed.
+2. **Free tier works for development.** 1,000 credits/month, no credit card — lowers barrier to get started and test the API without spend.
+3. **Micropayment alignment.** At $0.008/search PAYG, the x402 markup can be $0.01/search, maintaining the "sub-$0.10" constraint comfortably.
+4. **No subscription trap.** SerpAPI's subscription-only pricing with expiring credits is incompatible with the pay-per-use model — you'd be paying fixed cost regardless of actual x402 API usage.
+5. **Dependency stability.** Uses its own infrastructure, not a wrapper around Google that can break.
+
+**When Brave is better:** If you specifically need a privacy-first, Google-independent index and your users care about unbiased results (e.g., competitive intelligence). The independent index is Brave's genuine differentiator. At $3 CPM it's slightly cheaper than Tavily PAYG at the unit level, but requires attribution and the SDK situation is worse.
+
+**When SerpAPI is better:** If you need Google SERP data specifically (ads, shopping results, local packs) and are willing to pay a subscription. Never for this use case.
+
+### Python Backend Libraries
+
+| Library | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| `tavily-python` | `^0.5.x` (latest Feb 2026) | Official Tavily Python SDK | Simple `TavilyClient(api_key=...).search(query)` interface; returns structured JSON |
+
+### Installation
+
+```bash
+pip install tavily-python
+```
+
+### Environment Variables
+
+```bash
+TAVILY_API_KEY=tvly-xxx
+```
+
+### Integration
+
+```python
+from tavily import TavilyClient
+
+client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
+results = client.search(
+    query=params["query"],
+    max_results=params.get("max_results", 5),
+    search_depth="basic",  # or "advanced" (2 credits)
+)
+# Returns: {"results": [{"title": ..., "url": ..., "content": ..., "score": ...}]}
+```
+
+---
+
+## API 4: File Conversion (Railway)
+
+Four conversion types: doc-to-pdf, image resize, html-to-pdf, csv-to-json. Each has different library needs.
+
+### Python Backend Libraries
 
 | Library | Version | Purpose | When to Use |
 |---------|---------|---------|-------------|
-| `tailwindcss` | `^4.0.0` | Utility CSS | Only for Path B (custom design) or if Starlight's default design needs significant customization. Tailwind v4 uses a Vite plugin — no `@astrojs/tailwind` integration needed |
-| `@tailwindcss/vite` | `^4.0.0` | Vite plugin for Tailwind v4 | Replaces old `@astrojs/tailwind` for Tailwind v4; add to Astro's vite plugins config |
-| `@astrojs/mdx` | `^4.x` | MDX support | Only if you need JSX components inside Markdown docs. Not needed for plain `.md` docs — Astro handles those natively |
+| `WeasyPrint` | `^68.1` (released Feb 6, 2026) | HTML → PDF | Primary html-to-pdf conversion; pure Python CSS layout engine; no headless browser needed; requires Python >=3.10 |
+| `Pillow` | `^12.1.1` (released Feb 11, 2026) | Image resize, format conversion | All image operations; format conversion (PNG→JPEG, etc.); thumbnail generation; the standard |
+| `python-docx` | `^1.1.2` | Read `.docx` content | For DOCX inspection — but NOT for DOCX-to-PDF conversion (use LibreOffice for that) |
+| `pypdf` | `^4.x` | PDF read/merge | Only if PDF manipulation (merge, split) is needed beyond conversion |
 
-### Development Tools
+### DOCX-to-PDF: LibreOffice via subprocess
 
-| Tool | Purpose | Notes |
-|------|---------|-------|
-| `astro` CLI | `npx astro dev` for local preview, `npx astro build` for static output | No global install needed; use via npx or npm scripts |
-| `astro check` | TypeScript/Astro type checking | Run in CI before deploy |
+**Do NOT use `python-docx` alone for doc-to-pdf.** It reads DOCX but cannot render to PDF with accurate formatting.
 
-### Installation (Path A — Starlight)
+**Use LibreOffice headless via subprocess:**
+
+```python
+import subprocess
+subprocess.run([
+    "libreoffice", "--headless", "--convert-to", "pdf",
+    "--outdir", output_dir, input_path
+], check=True)
+```
+
+Railway's Docker image can include LibreOffice:
+```dockerfile
+RUN apt-get install -y libreoffice --no-install-recommends
+```
+
+This is the production-proven approach. Conversion time on Railway: ~1-2 seconds per document.
+
+**Alternative considered: `docx2pdf`** — This is a thin wrapper that calls LibreOffice or Microsoft Word depending on platform. On Linux Railway it calls LibreOffice anyway, so use LibreOffice subprocess directly for control.
+
+**Alternative considered: `unoconv`** — Deprecated; uses the same LibreOffice backend but adds an unstable Python 2 layer. Do not use.
+
+### CSV-to-JSON: stdlib only
+
+```python
+import csv, json
+
+def csv_to_json(content: str) -> list[dict]:
+    reader = csv.DictReader(content.splitlines())
+    return list(reader)
+```
+
+No library needed. Python's `csv.DictReader` handles the conversion. Keep it simple.
+
+### Installation
 
 ```bash
-# Create site (separate project)
-npm create astro@latest -- --template starlight
-
-# Or manually
-npm install astro @astrojs/starlight
-
-# Dev
-npm run dev
-
-# Build (outputs to dist/)
-npm run build
+pip install weasyprint pillow python-docx
 ```
 
-### Installation (Path B — Custom Astro + Tailwind)
+Dockerfile addition for LibreOffice:
+```dockerfile
+RUN apt-get update && apt-get install -y libreoffice --no-install-recommends && rm -rf /var/lib/apt/lists/*
+```
+
+### Sizing Note
+
+LibreOffice adds ~300MB to the Railway Docker image. This is the main cost tradeoff — acceptable for a file conversion service.
+
+---
+
+## API 5: Audio Transcription (Home Server — NOT Railway)
+
+**Critical finding: MLX Whisper does NOT run on Intel Mac (x86_64).**
+
+MLX is Apple's array framework designed exclusively for Apple Silicon (M1/M2/M3/M4). The PyPI package only ships `macosx_*_arm64` wheels. It will not install or run on macOS Monterey x86_64.
+
+### The Intel Mac Problem
+
+The home server at 10.0.0.2 is macOS Monterey x86_64. MLX Whisper is not an option. This changes the transcription deployment entirely.
+
+### Recommended Alternative: faster-whisper
+
+| Library | Version | Purpose | Why |
+|---------|---------|---------|-----|
+| `faster-whisper` | `^1.2.1` (latest 2026) | Audio transcription on CPU | CTranslate2-based reimplementation; 4x faster than `openai-whisper` at same accuracy; explicit x86_64 CPU support via Intel MKL backend; 8-bit quantization reduces memory |
+
+`faster-whisper` uses CTranslate2 which supports x86_64 via Intel MKL and OpenBLAS. This is the right choice for an Intel Mac server.
+
+### Alternative: openai-whisper
+
+`openai-whisper` (version 20250625, released June 2025) also runs on Intel Mac via PyTorch CPU mode. However, it is 4x slower than `faster-whisper` for the same model and accuracy. Use `faster-whisper` unless PyTorch compatibility is specifically needed.
+
+### Installation on Intel Mac
 
 ```bash
-npm create astro@latest
-
-# Add Tailwind v4
-npm install tailwindcss @tailwindcss/vite
-
-# Optional MDX
-npx astro add mdx
+pip install faster-whisper
 ```
 
-### Astro Config for Static Output (Self-Hosting)
+No special flags needed. CTranslate2 wheels for macOS x86_64 are available on PyPI.
 
-```js
-// astro.config.mjs
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
+### Model Choice for Intel Mac
 
-export default defineConfig({
-  output: 'static',   // default — generates file-based HTML
-  integrations: [
-    starlight({
-      title: 'x402 API Network',
-      // ...
-    }),
-  ],
-});
+```python
+from faster_whisper import WhisperModel
+
+# For Intel Mac: use "medium" or "medium.en" for English
+# int8 quantization reduces memory without significant accuracy loss on CPU
+model = WhisperModel("medium.en", device="cpu", compute_type="int8")
+
+segments, info = model.transcribe("audio.mp3", beam_size=5)
+transcript = " ".join([s.text for s in segments])
 ```
 
-`output: 'static'` is the default. The `dist/` folder is self-contained — copy to `/var/www/` and serve with Nginx.
+On Intel Mac CPU, `medium.en` with int8 is the practical sweet spot:
+- `tiny.en` / `base.en` — too fast to matter but noticeably less accurate
+- `large-v3` — too slow on CPU for a responsive API (minutes per minute of audio)
+- `medium.en` + int8 — ~real-time factor of 2-4x on modern Intel i7/i9
 
-### Self-Hosting Deployment
+### Deployment Pattern
 
-No additional npm packages needed. Build generates a static `dist/` folder. Deploy with:
+Unlike the Railway services, the transcription API runs directly on the home Mac server via FastAPI + uvicorn, proxied through the existing nginx on port 8888. Same `fastapi-x402` middleware pattern applies — it's still a FastAPI service.
 
 ```bash
-npm run build
-rsync -av dist/ user@homeserver:/var/www/x402-api-network/
+uvicorn transcription_api:app --host 0.0.0.0 --port 8001
 ```
 
-Nginx config: standard static file serving. No Node runtime required on the server.
+Nginx proxies `/transcribe` to `:8001`. The MCP server calls `http://10.0.0.2:8888/transcribe` (same nginx gateway as the brand site).
+
+### Audio Format Handling
+
+```bash
+pip install faster-whisper ffmpeg-python
+```
+
+`faster-whisper` uses `ffmpeg` internally — ensure ffmpeg is installed on the Mac server:
+```bash
+brew install ffmpeg
+```
+
+Accept audio URLs (download to temp file, transcribe, delete). Support: mp3, mp4, m4a, wav, ogg, webm.
+
+---
+
+## MCP Server Updates (TypeScript)
+
+The MCP server in `src/index.ts` requires no new runtime dependencies. All 5 new APIs follow the existing `apiGet`/`apiPost` helper pattern with `x402-fetch`.
+
+**Changes needed:**
+1. Add 5 new API entries to the `APIS` const object
+2. Add ~2 tools per new API (test + paid mode)
+3. Update `package.json` version to `1.1.0`
+4. Update `description` and `keywords` fields
+
+No new npm packages required in the MCP server itself.
+
+---
+
+## What NOT to Use
+
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| `mlx-whisper` | Apple Silicon only; will not install on macOS x86_64 | `faster-whisper` — explicit x86_64 CPU support via CTranslate2 |
+| `openai-whisper` (for production) | 4x slower than faster-whisper at same accuracy on CPU | `faster-whisper ^1.2.1` |
+| `PyPDF2` | Deprecated; no longer maintained | `pypdf` (successor project by same maintainers) |
+| `unoconv` | Deprecated Python 2 wrapper around LibreOffice; unreliable on modern systems | LibreOffice `--headless` subprocess directly |
+| `docx2pdf` | Just wraps LibreOffice anyway on Linux; adds unnecessary abstraction | LibreOffice subprocess directly |
+| SerpAPI | Subscription-only with expiring credits; incompatible with pay-per-use model; 4x more expensive at volume | Tavily |
+| `@x402/fetch` (scoped) | Non-functional stub package — confirmed gotcha from v1.0 | `x402-fetch` (non-scoped, already in use) |
+| `cheerio` (npm) | Not applicable — backend is Python/FastAPI, not Node.js | `beautifulsoup4` + `lxml` |
+| Playwright MCP / Puppeteer MCP | For the Python Railway backend, use `playwright` Python package | `playwright` (Python, PyPI) |
+
+---
+
+## Stack Patterns by API Host
+
+**Railway services (Web Scraping, Email, Search, File Conversion):**
+- Same FastAPI + `fastapi-x402` pattern as screenshot/PDF APIs
+- Python 3.11+ (Railway default)
+- `requirements.txt` per service
+- Dockerfile only if extra system deps needed (LibreOffice for file conversion)
+- Free test endpoint at `/test/<endpoint>` with safe input restrictions
+
+**Home server (Transcription):**
+- FastAPI + `fastapi-x402` — same middleware pattern, different host
+- Python 3.11+ (install via pyenv on Mac)
+- Service: uvicorn on :8001, nginx proxy on :8888
+- `faster-whisper` model loaded at startup (not per-request)
+- Model warm-up on first request (5-15 seconds cold start) — acceptable for a home server
+
+---
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| `WeasyPrint ^68.1` | Python >=3.10 | Dropped Python 3.9 — use Railway Python 3.11+ |
+| `faster-whisper ^1.2.1` | Python >=3.8, macOS x86_64 | CTranslate2 has x86_64 wheels; no ARM-only restriction |
+| `playwright ^1.58.0` (Python) | Python >=3.9 | Requires `playwright install chromium` post-install; add to Railway Dockerfile or Procfile |
+| `Pillow ^12.1.1` | Python >=3.9 | No breaking changes from 10.x for resize/format operations |
+| `tavily-python` | Python >=3.8 | Simple REST wrapper; no version conflicts expected |
+| `resend ^2.x` | Python >=3.7 | SDK 2.0 has type hints; use `resend.Emails.send({...})` pattern |
 
 ---
 
@@ -174,61 +355,90 @@ Nginx config: standard static file serving. No Node runtime required on the serv
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Astro 5 | Next.js | When you need SSR, API routes, or a React-heavy UI — overkill for static docs/marketing |
-| Astro 5 | VitePress | VitePress is Vue-only and docs-only; Astro handles both marketing and docs in one site |
-| Astro 5 | Docusaurus | Good alternative if the site is docs-only and React ecosystem is preferred; heavier bundle |
-| Starlight | Custom Astro + Tailwind | When brand design requires full visual control; more work, same deployment model |
-| `publint` | Manual testing only | `publint` catches export field errors that `npm pack --dry-run` misses |
-| `files` field | `.npmignore` | `.npmignore` works but `files` is explicit allowlist, harder to accidentally leak files |
+| `faster-whisper` | `openai-whisper` | When you need PyTorch ecosystem compatibility or are testing on Apple Silicon where MLX is available |
+| `WeasyPrint` | Playwright HTML→PDF | When pixel-perfect CSS/JS rendering is needed (WeasyPrint doesn't run JS); Playwright is heavier but handles JS-rendered pages |
+| Tavily | Brave Search API | When you need a Google/Bing-independent index and your users value privacy-first results; attribution required |
+| Tavily | SerpAPI | When you specifically need raw Google SERP data (ads, shopping boxes, local results) — never for agent/LLM use case |
+| LibreOffice subprocess | `python-docx` + `reportlab` | When you can't add 300MB to the Docker image; limited to simple documents only |
+| BeautifulSoup4 + lxml | `html5lib` parser | When strict HTML5 spec conformance is more important than speed; slower but more tolerant of malformed HTML |
 
-## What NOT to Use
+---
 
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| `@astrojs/tailwind` (old integration) | Deprecated for Tailwind v4; only works with Tailwind v3 | `@tailwindcss/vite` Vite plugin |
-| `@x402/fetch` (scoped package) | Placeholder stub, non-functional | `x402-fetch` (non-scoped, v1.1.0) — already in use |
-| Global `npm install -g astro` | Astro must be installed locally per project | `npm install astro` as devDependency |
-| Astro SSR output mode | Requires Node runtime on home server; breaks static deployment | `output: 'static'` (default) |
-| `.npmignore` alongside `files` field | `files` takes precedence — `.npmignore` is ignored when `files` exists; having both is confusing | Use only `files` |
+## Full Installation Summary
 
-## Stack Patterns by Variant
+### Per Railway Service
 
-**If the brand site is docs-heavy (primary goal = developer adoption):**
-- Use Starlight — built-in search, nav, versioning, code highlighting
-- Add a custom landing page component at the root route for the marketing pitch
-- Zero additional styling libraries needed
+**Web Scraping API (`requirements.txt`):**
+```
+fastapi
+fastapi-x402
+uvicorn[standard]
+playwright==1.58.0
+beautifulsoup4>=4.12.3
+lxml>=5.3.0
+```
+Post-install: `playwright install chromium --with-deps`
 
-**If the brand site is marketing-heavy (primary goal = conversion/splash page):**
-- Use plain Astro with Tailwind v4
-- Write docs as Markdown content collections under `src/content/docs/`
-- More design work but full visual control
+**Email Sending API (`requirements.txt`):**
+```
+fastapi
+fastapi-x402
+uvicorn[standard]
+resend>=2.0.0
+```
 
-**If publishing to npm before the brand site is live:**
-- `homepage` field in package.json can point to the future URL
-- Publish works without the site being live
-- The `README.md` becomes the npm registry page — prioritize it
+**Web Search API (`requirements.txt`):**
+```
+fastapi
+fastapi-x402
+uvicorn[standard]
+tavily-python>=0.5.0
+```
 
-## Version Compatibility
+**File Conversion API (`requirements.txt` + Dockerfile):**
+```
+fastapi
+fastapi-x402
+uvicorn[standard]
+weasyprint>=68.1
+Pillow>=12.1.1
+python-docx>=1.1.2
+```
+```dockerfile
+RUN apt-get update && apt-get install -y libreoffice --no-install-recommends && rm -rf /var/lib/apt/lists/*
+```
 
-| Package A | Compatible With | Notes |
-|-----------|-----------------|-------|
-| `astro@^5.18.0` | Node.js >= 18.17.1, 20.3.0, or >= 22 | Astro 5 dropped Node 16 support |
-| `@astrojs/starlight@^0.37.6` | `astro@^5.x` | Starlight 0.37.x requires Astro 5; do not use with Astro 4 |
-| `tailwindcss@^4.0.0` + `@tailwindcss/vite` | `astro@^5.2.0+` | Astro 5.2 added native Vite plugin support; old `@astrojs/tailwind` integration is Tailwind v3 only |
-| `publint@^0.3.18` | Any npm package | Dev tool only, no peer dependency constraints |
+### Home Server (Transcription)
+
+```bash
+pip install faster-whisper fastapi fastapi-x402 uvicorn ffmpeg-python
+brew install ffmpeg  # system dependency
+```
+
+### MCP Server (TypeScript) — No New Dependencies
+
+```bash
+# No changes to package.json dependencies
+# Only src/index.ts additions and version bump to 1.1.0
+```
+
+---
 
 ## Sources
 
-- [npmjs.com/package/astro](https://www.npmjs.com/package/astro) — confirmed v5.18.0 latest stable
-- [npmjs.com/package/@astrojs/starlight](https://www.npmjs.com/package/@astrojs/starlight) — confirmed v0.37.6 latest
-- [npmjs.com/package/publint](https://www.npmjs.com/package/publint) — confirmed v0.3.18 latest
-- [astro.build/blog/astro-520](https://astro.build/blog/astro-520/) — Tailwind v4 Vite plugin support in Astro 5.2
-- [tailwindcss.com/docs/installation/framework-guides/astro](https://tailwindcss.com/docs/installation/framework-guides/astro) — Tailwind v4 install with `@tailwindcss/vite`
-- [docs.astro.build/en/guides/deploy/](https://docs.astro.build/en/guides/deploy/) — static output + self-hosting
-- [aihero.dev/publish-your-mcp-server-to-npm](https://www.aihero.dev/publish-your-mcp-server-to-npm) — MCP server npm publish pattern (shebang, bin, files)
-- [snyk.io/blog/best-practices-create-modern-npm-package](https://snyk.io/blog/best-practices-create-modern-npm-package/) — npm package security best practices
-- [publint.dev](https://publint.dev/) — publint validation rules
+- [pypi.org/project/faster-whisper](https://pypi.org/project/faster-whisper/) — v1.2.1 confirmed, CTranslate2 x86_64 support verified
+- [github.com/ml-explore/mlx](https://github.com/ml-explore/mlx) — Apple Silicon only, arm64 wheels only, confirmed no x86_64 support
+- [pypi.org/project/weasyprint](https://pypi.org/project/weasyprint/) — v68.1 released Feb 6, 2026; Python >=3.10 required
+- [pypi.org/project/pillow](https://pypi.org/project/pillow/) — v12.1.1 released Feb 11, 2026
+- [pypi.org/project/tavily-python](https://pypi.org/project/tavily-python/) — confirmed latest Feb 2026; `pip install tavily-python`
+- [pypi.org/project/resend](https://pypi.org/project/resend/) — SDK 2.0, Feb 2026; type hints, Python >=3.7
+- [pypi.org/project/playwright](https://pypi.org/project/playwright/) — v1.58.0, released Jan 30, 2026; Python >=3.9
+- [docs.tavily.com/documentation/api-credits](https://docs.tavily.com/documentation/api-credits) — 1,000 free credits/month; $0.008/credit PAYG
+- [brave.com/search/api](https://brave.com/search/api/) — $3-$5 CPM; free tier dropped Feb 12, 2026; $5 monthly credits now
+- [serpapi.com/pricing](https://serpapi.com/pricing) — $75/month for 5,000 searches; credits expire; no PAYG
+- [implicator.ai/brave-drops-free-search-api-tier](https://www.implicator.ai/brave-drops-free-search-api-tier-puts-all-developers-on-metered-billing/) — Brave free tier removal confirmed
+- [dev.to/ritza/best-serp-api-comparison-2025](https://dev.to/ritza/best-serp-api-comparison-2025-serpapi-vs-exa-vs-tavily-vs-scrapingdog-vs-scrapingbee-2jci) — comparative analysis
 
 ---
-*Stack research for: x402 API Network — npm publishing + Astro brand/docs site*
-*Researched: 2026-03-09*
+*Stack research for: x402 API Network — v1.1 Universal Utility APIs (5 new backends)*
+*Researched: 2026-03-12*

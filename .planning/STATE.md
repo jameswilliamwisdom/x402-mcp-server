@@ -3,29 +3,29 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Universal Utility APIs
 status: in_progress
-last_updated: "2026-03-12T19:36:00.000Z"
+last_updated: "2026-03-12T21:15:00.000Z"
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 12
-  completed_plans: 1
+  completed_plans: 2
 current_position:
-  phase: 05-web-scraping-api
-  plan: 01
-  stopped_at: "Completed 05-01-PLAN.md"
+  phase: 06-file-conversion-api
+  plan: pending
+  stopped_at: "Phase 5 complete. Phase 6 next."
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
 **Last updated:** 2026-03-12
-**Overall status:** Phase 5 in progress — Plan 01 complete (service build), Plan 02 pending (integration tests)
+**Overall status:** Phase 5 complete — deployed to Railway. Phase 6 (File Conversion API) next.
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 5 | Web Scraping API | In Progress (1/2 plans) |
+| 5 | Web Scraping API | Complete (2/2 plans) |
 | 6 | File Conversion API | Pending |
 | 7 | Web Search API | Pending |
 | 8 | Email Sending API | Pending |
@@ -40,6 +40,7 @@ current_position:
 - [x] Research completed — stack, features, architecture, pitfalls (2026-03-12)
 - [x] v1.1 roadmap created — Phases 5-10, 100% requirement coverage (2026-03-12)
 - [x] Phase 5 Plan 01: x402-scraping-api service built — 5 files, 604-line main.py (2026-03-12)
+- [x] Phase 5 Plan 02: Docker validated, Railway deployed — https://x402-scraping-api-production.up.railway.app (2026-03-12)
 
 ## Accumulated Decisions
 
@@ -54,7 +55,7 @@ current_position:
 |----------|---------|-------|
 | Verified sender domain for Resend | Phase 8 | Start DNS setup during Phase 7 to absorb 48-hour SPF/DKIM propagation delay |
 | Public URL for home server transcription | Phase 9 + 10 | Router port forwarding or Cloudflare Tunnel — confirm before publishing 1.1.0 |
-| Docker build validation for Playwright image | Phase 5 deploy | Run local `docker build x402-scraping-api/` before Railway deploy to validate base image |
+| ~~Docker build validation for Playwright image~~ | ~~Phase 5~~ | Resolved — pinned playwright==1.44.0, deployed successfully |
 | request.state.x402_payer attribute | Phase 5 Plan 02 | Per-wallet rate limit needs attribute name verified in fastapi-x402 0.1.8 source |
 
 ## Notes
