@@ -9,11 +9,11 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 
 ### Web Scraping
 
-- [ ] **SCRAPE-01**: Given a URL, return structured JSON with markdown text, extracted links, and page metadata
-- [ ] **SCRAPE-02**: JS-rendered pages supported via Playwright (not just static HTML)
-- [ ] **SCRAPE-03**: `wait_for` CSS selector parameter for async SPA content
-- [ ] **SCRAPE-04**: SSRF protection — server-side IP validation rejects private/loopback ranges
-- [ ] **SCRAPE-05**: Free test endpoint with fixture data (no live scraping)
+- [x] **SCRAPE-01**: Given a URL, return structured JSON with markdown text, extracted links, and page metadata
+- [x] **SCRAPE-02**: JS-rendered pages supported via Playwright (not just static HTML)
+- [x] **SCRAPE-03**: `wait_for` CSS selector parameter for async SPA content
+- [x] **SCRAPE-04**: SSRF protection — server-side IP validation rejects private/loopback ranges
+- [x] **SCRAPE-05**: Free test endpoint with fixture data (no live scraping)
 
 ### Email Sending
 
@@ -100,11 +100,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCRAPE-01 | 5 | Pending |
-| SCRAPE-02 | 5 | Pending |
-| SCRAPE-03 | 5 | Pending |
-| SCRAPE-04 | 5 | Pending |
-| SCRAPE-05 | 5 | Pending |
+| SCRAPE-01 | 5 | Complete |
+| SCRAPE-02 | 5 | Complete |
+| SCRAPE-03 | 5 | Complete |
+| SCRAPE-04 | 5 | Complete |
+| SCRAPE-05 | 5 | Complete |
 | EMAIL-01 | 8 | Pending |
 | EMAIL-02 | 8 | Pending |
 | EMAIL-03 | 8 | Pending |
