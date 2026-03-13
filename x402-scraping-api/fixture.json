@@ -1,0 +1,46 @@
+{
+  "success": true,
+  "url": "https://x402.org",
+  "final_url": "https://x402.org/",
+  "markdown": "# x402 Protocol\n\nThe x402 protocol enables pay-per-request APIs using the HTTP 402 Payment Required status code and USDC stablecoin payments on the Base blockchain.\n\n## How It Works\n\nWhen a client calls an x402-protected API without payment, the server returns HTTP 402 with a payment payload. The client's x402-enabled wallet automatically pays the requested amount in USDC and retries the request — all within a single API call.\n\n## Key Features\n\n- **Zero integration friction**: AI agents discover and pay for APIs automatically\n- **USDC on Base**: stable, fast, and cheap settlement\n- **Open standard**: any HTTP client can implement the x402 payment flow\n- **Per-request pricing**: pay only for what you use, no subscriptions\n\n## Network Support\n\nThe x402 protocol currently supports Base mainnet and Base Sepolia testnet. Mainnet uses production USDC; Sepolia uses test USDC for development.\n\n## Developer Resources\n\nThe x402 ecosystem includes SDKs for JavaScript/TypeScript (npm: `x402-js`) and Python (pip: `fastapi-x402`). Server implementations are available for FastAPI, Express, and Next.js.\n\n## Getting Started\n\nTo use an x402 API: install the x402 client library, configure your wallet private key, and call any x402-protected endpoint. The payment flow is fully automated.\n\nTo build an x402 API: add `fastapi-x402` to your FastAPI app with `init_x402(app)` and decorate your endpoints with `@pay(\"$0.01\")`.",
+  "links": [
+    {"url": "https://x402.org/docs", "text": "Documentation"},
+    {"url": "https://github.com/coinbase/x402", "text": "GitHub"},
+    {"url": "https://x402.org/quickstart", "text": "Quickstart Guide"},
+    {"url": "https://www.npmjs.com/package/x402-js", "text": "x402-js on npm"},
+    {"url": "https://pypi.org/project/fastapi-x402/", "text": "fastapi-x402 on PyPI"}
+  ],
+  "tables": [
+    {
+      "headers": ["Network", "Token", "Status", "Chain ID"],
+      "rows": [
+        ["Base", "USDC", "Mainnet", "8453"],
+        ["Base Sepolia", "USDC", "Testnet", "84532"]
+      ]
+    },
+    {
+      "headers": ["SDK", "Language", "Install", "Min Version"],
+      "rows": [
+        ["x402-js", "JavaScript/TypeScript", "npm install x402-js", "0.1.0"],
+        ["fastapi-x402", "Python", "pip install fastapi-x402", "0.1.8"]
+      ]
+    }
+  ],
+  "images": [
+    {"src": "https://x402.org/logo.png", "alt": "x402 logo"},
+    {"src": "https://x402.org/og-image.png", "alt": "x402 Protocol — Pay-Per-Request APIs"}
+  ],
+  "metadata": {
+    "title": "x402 — Pay-Per-Request API Protocol",
+    "description": "The open standard for machine-to-machine micropayments using USDC on Base blockchain",
+    "og_title": "x402 Protocol",
+    "og_image": "https://x402.org/og-image.png",
+    "canonical_url": "https://x402.org/",
+    "language": "en",
+    "status_code": 200,
+    "content_type": "text/html; charset=utf-8",
+    "content_language": null,
+    "x_robots_tag": null
+  },
+  "warnings": []
+}
