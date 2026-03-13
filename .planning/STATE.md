@@ -1,28 +1,28 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v1.1
 milestone_name: Universal Utility APIs
-status: unknown
-last_updated: "2026-03-13T02:36:33.972Z"
+status: in_progress
+last_updated: "2026-03-13T02:59:49Z"
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 12
+  completed_plans: 12
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
-**Last updated:** 2026-03-12
-**Overall status:** Phase 5 complete — deployed to Railway. Phase 6 (File Conversion API) next.
+**Last updated:** 2026-03-13
+**Overall status:** Phase 6 Plan 01 complete — x402-conversion-api service built (5 files, 523-line main.py). Ready for Docker validation / Railway deployment.
 
 ## Phase Status
 
 | Phase | Name | Status |
 |-------|------|--------|
 | 5 | Web Scraping API | Complete (2/2 plans) |
-| 6 | File Conversion API | Pending |
+| 6 | File Conversion API | In Progress (1/1 plan complete) |
 | 7 | Web Search API | Pending |
 | 8 | Email Sending API | Pending |
 | 9 | Audio Transcription API | Pending |
@@ -37,6 +37,7 @@ progress:
 - [x] v1.1 roadmap created — Phases 5-10, 100% requirement coverage (2026-03-12)
 - [x] Phase 5 Plan 01: x402-scraping-api service built — 5 files, 604-line main.py (2026-03-12)
 - [x] Phase 5 Plan 02: Docker validated, Railway deployed — https://x402-scraping-api-production.up.railway.app (2026-03-12)
+- [x] Phase 6 Plan 01: x402-conversion-api service built — 5 files, 523-line main.py; CONV-01 through CONV-05 satisfied (2026-03-13)
 
 ## Accumulated Decisions
 
@@ -44,6 +45,10 @@ progress:
 - **SSRF middleware ordering:** Add SSRFMiddleware AFTER init_x402 — LIFO ensures SSRF runs before payment; confirmed pattern for all x402 + SSRF services
 - **Context-level route handlers:** Register Playwright route handlers on `context` not `page` — context.close() clears accumulated Request/Response objects, prevents memory leak on long-running services
 - **Shared time budget:** Use monotonic start + per-call `max(min_ms, remaining_budget_ms)` for Playwright sequences — independent per-action timeouts compound to 2x the intended ceiling
+- **Discriminated union endpoint pattern:** Single POST /convert with Pydantic `Field(discriminator="type")` — one payment gate, one SSRF check, one test fixture for multi-operation APIs (Phase 6)
+- **httpx redirect SSRF re-validation:** Use `event_hooks={"response": [on_redirect]}` to call `validate_url_for_ssrf(location)` on every redirect hop — prevents TOCTOU bypass after initial validation
+- **WeasyPrint safe_url_fetcher:** Wrap `default_url_fetcher` with SSRF validation for all secondary resource fetches — required for CVE-2025-68616 mitigation
+- **Docker WeasyPrint smoke test:** Add `RUN python -c "from weasyprint import HTML; HTML(string='<p>test</p>').write_pdf()"` after pip install — catches missing C libs at build time, not at first request
 
 ## Open Questions
 
@@ -74,4 +79,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-12 — Phase 5 Plan 01 complete. x402-scraping-api service built (5 files). SCRAPE-01 through SCRAPE-05 satisfied. Ready for Phase 5 Plan 02 (integration tests).*
+*Last updated: 2026-03-13 — Phase 6 Plan 01 complete. x402-conversion-api service built (5 files, 523-line main.py). CONV-01 through CONV-05 satisfied. Ready for Phase 6 deployment or Phase 7 (Web Search API).*

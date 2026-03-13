@@ -60,7 +60,7 @@ Plans:
 
 #### Phase 6: File Conversion API
 
-**Status:** Pending
+**Status:** In Progress (1/1 plan complete — 2026-03-13)
 **Requirements:** CONV-01, CONV-02, CONV-03, CONV-04, CONV-05
 
 **What ships:** A new Railway service (`x402-conversion-api`) with three conversion operations unified under one endpoint: image resize/reformat (Pillow), CSV-to-JSON (Python stdlib), and HTML-to-PDF (WeasyPrint). Input is a URL pointing to the source file plus the target format. Output is base64-encoded with a MIME type header. DOCX-to-PDF is explicitly deferred to v1.2 (LibreOffice adds ~300MB to the Docker image).

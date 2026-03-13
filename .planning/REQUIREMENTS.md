@@ -33,11 +33,11 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 
 ### File Conversion
 
-- [ ] **CONV-01**: Image resize/reformat (Pillow) — input URL + target dimensions/format
-- [ ] **CONV-02**: CSV→JSON conversion (Python stdlib)
-- [ ] **CONV-03**: HTML→PDF conversion (WeasyPrint)
-- [ ] **CONV-04**: SSRF protection on file fetch URLs
-- [ ] **CONV-05**: Free test endpoint with fixture data
+- [x] **CONV-01**: Image resize/reformat (Pillow) — input URL + target dimensions/format
+- [x] **CONV-02**: CSV→JSON conversion (Python stdlib)
+- [x] **CONV-03**: HTML→PDF conversion (WeasyPrint)
+- [x] **CONV-04**: SSRF protection on file fetch URLs
+- [x] **CONV-05**: Free test endpoint with fixture data
 
 ### Audio Transcription
 
@@ -115,11 +115,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEARCH-03 | 7 | Pending |
 | SEARCH-04 | 7 | Pending |
 | SEARCH-05 | 7 | Pending |
-| CONV-01 | 6 | Pending |
-| CONV-02 | 6 | Pending |
-| CONV-03 | 6 | Pending |
-| CONV-04 | 6 | Pending |
-| CONV-05 | 6 | Pending |
+| CONV-01 | 6 | Complete |
+| CONV-02 | 6 | Complete |
+| CONV-03 | 6 | Complete |
+| CONV-04 | 6 | Complete |
+| CONV-05 | 6 | Complete |
 | TRANS-01 | 9 | Pending |
 | TRANS-02 | 9 | Pending |
 | TRANS-03 | 9 | Pending |
