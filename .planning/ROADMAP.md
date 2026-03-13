@@ -31,8 +31,13 @@ See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
 
 #### Phase 5: Web Scraping API
 
-**Status:** Pending
+**Status:** Planning complete
 **Requirements:** SCRAPE-01, SCRAPE-02, SCRAPE-03, SCRAPE-04, SCRAPE-05
+**Plans:** 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Build complete scraping service (main.py, Dockerfile, config, fixture)
+- [ ] 05-02-PLAN.md — Docker validation, Railway deployment, production verification
 
 **What ships:** A new Railway service (`x402-scraping-api`) that accepts a URL and returns structured JSON — markdown-converted page text, extracted links, tables, and page metadata. JS-rendered pages are supported via Playwright. A `wait_for` CSS selector param allows callers to pause until async SPA content loads. SSRF protection validates resolved IPs against private/loopback ranges before any outbound fetch.
 
@@ -175,4 +180,4 @@ See [v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md) for full details.
 ---
 
 *Roadmap created: 2026-03-09*
-*Last updated: 2026-03-12 — v1.1 roadmap added (Phases 5-10)*
+*Last updated: 2026-03-12 — Phase 5 planned (2 plans, 2 waves)*
