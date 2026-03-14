@@ -1,0 +1,23 @@
+{
+    "query": "x402 protocol",
+    "results": [
+        {
+            "title": "x402: The Native Payment Protocol for HTTP",
+            "url": "https://x402.org",
+            "snippet": "The x402 protocol enables pay-per-request APIs using USDC on Base. Any HTTP endpoint can become a paid service with a single decorator.",
+            "score": 0.9876
+        },
+        {
+            "title": "Coinbase x402 Protocol \u2014 GitHub",
+            "url": "https://github.com/coinbase/x402",
+            "snippet": "Open-source implementation of the x402 HTTP payment protocol. Clients pay with USDC, servers verify via facilitator. Zero integration friction for AI agents.",
+            "score": 0.9543
+        },
+        {
+            "title": "x402 Payment Flow \u2014 Technical Architecture",
+            "url": "https://docs.cdp.coinbase.com/x402",
+            "snippet": "Step-by-step walkthrough of x402 payment verification: 402 response, X-PAYMENT header construction, facilitator verify/settle cycle.",
+            "score": 0.9102
+        }
+    ]
+}
