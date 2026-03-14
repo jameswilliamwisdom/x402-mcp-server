@@ -14,8 +14,8 @@ A new Railway service (`x402-email-api`) that sends transactional email via the 
 ## Implementation Decisions
 
 ### Sender Identity
-- Domain: `x402.org` — verified via Resend
-- From address: `x402 Email API <noreply@x402.org>`
+- Domain: `jameswisdom.ink` — verified via Resend (Cloudflare DNS, all records propagated)
+- From address: `x402 Email API <noreply@jameswisdom.ink>`
 - Optional `reply_to` parameter — caller can set a reply-to address so recipients can respond to them directly
 - From address is hardcoded, not user-configurable
 
@@ -37,9 +37,9 @@ A new Railway service (`x402-email-api`) that sends transactional email via the 
 
 ### Resend Configuration
 - Resend free tier (100 emails/day, 1 domain) — sufficient for micropayment-gated API
-- DNS provider for x402.org: TBD — determine during setup
-- Resend account: needs to be created
-- DNS verification (SPF/DKIM/DMARC) to be started immediately — absorb 24-48hr propagation before code deploys
+- Domain: `jameswisdom.ink` on Cloudflare DNS — SPF/DKIM/DMARC verified and propagated
+- Resend account: created (jameswilliamwisdom)
+- Resend API key: set as `RESEND_API_KEY` Railway env var (create via Resend dashboard → API Keys)
 
 </decisions>
 
