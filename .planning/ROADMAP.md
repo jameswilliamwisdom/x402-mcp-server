@@ -112,8 +112,9 @@ Plans:
 
 #### Phase 8: Email Sending API
 
-**Status:** Pending
+**Status:** In Progress (1/2 plans complete — Plan 02 at checkpoint awaiting Railway deployment)
 **Requirements:** EMAIL-01, EMAIL-02, EMAIL-03, EMAIL-04, EMAIL-05
+**Plans:** 1/2 plans complete
 
 **What ships:** A new Railway service (`x402-email-api`) that sends transactional email via the Resend SDK. Accepts `to`, `subject`, and a body (plain text or HTML; plain-text fallback auto-generated from HTML). Returns a Resend message ID as delivery confirmation. Sender domain is hardcoded to the verified domain; per-wallet daily send limit prevents abuse.
 
@@ -185,4 +186,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-03-09*
-*Last updated: 2026-03-12 — Phase 5 complete, deployed to Railway*
+*Last updated: 2026-03-14 — Phase 8 Plan 02 Task 1 complete (Docker validated). Awaiting checkpoint: Railway deployment.*
