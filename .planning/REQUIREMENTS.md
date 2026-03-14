@@ -25,11 +25,11 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 
 ### Web Search
 
-- [ ] **SEARCH-01**: Given a query, return top N results (title, URL, snippet) as JSON via Tavily
-- [ ] **SEARCH-02**: `include_answer` param — synthesized answer with sources
-- [ ] **SEARCH-03**: `include_domains`/`exclude_domains` for focused research
-- [ ] **SEARCH-04**: Per-wallet daily query limit to prevent cost spikes
-- [ ] **SEARCH-05**: Free test endpoint with fixture data
+- [x] **SEARCH-01**: Given a query, return top N results (title, URL, snippet) as JSON via Tavily
+- [x] **SEARCH-02**: `include_answer` param — synthesized answer with sources
+- [x] **SEARCH-03**: `include_domains`/`exclude_domains` for focused research
+- [x] **SEARCH-04**: Per-wallet daily query limit to prevent cost spikes
+- [x] **SEARCH-05**: Free test endpoint with fixture data
 
 ### File Conversion
 
@@ -110,11 +110,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EMAIL-03 | 8 | Pending |
 | EMAIL-04 | 8 | Pending |
 | EMAIL-05 | 8 | Pending |
-| SEARCH-01 | 7 | Pending |
-| SEARCH-02 | 7 | Pending |
-| SEARCH-03 | 7 | Pending |
-| SEARCH-04 | 7 | Pending |
-| SEARCH-05 | 7 | Pending |
+| SEARCH-01 | 7 | Complete |
+| SEARCH-02 | 7 | Complete |
+| SEARCH-03 | 7 | Complete |
+| SEARCH-04 | 7 | Complete |
+| SEARCH-05 | 7 | Complete |
 | CONV-01 | 6 | Complete |
 | CONV-02 | 6 | Complete |
 | CONV-03 | 6 | Complete |

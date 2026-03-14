@@ -1,21 +1,21 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.1
+milestone: v1.0
 milestone_name: Universal Utility APIs
-status: in_progress
-last_updated: "2026-03-13T02:59:49Z"
+status: unknown
+last_updated: "2026-03-14T00:03:16.149Z"
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 6
-  total_plans: 14
+  total_plans: 15
   completed_plans: 14
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
-**Last updated:** 2026-03-13
-**Overall status:** Phase 6 complete — x402-conversion-api deployed to Railway at https://x402-conversion-api-production.up.railway.app. All CONV requirements verified in production. Ready for Phase 7 (Web Search API).
+**Last updated:** 2026-03-14
+**Overall status:** Phase 7 Plan 01 complete — x402-search-api service built (5 files, 266-line main.py). AsyncTavilyClient integration with per-wallet rate limit. SEARCH-01 through SEARCH-05 satisfied. Ready for Phase 7 Plan 02 (Railway deployment).
 
 ## Phase Status
 
@@ -23,7 +23,7 @@ progress:
 |-------|------|--------|
 | 5 | Web Scraping API | Complete (2/2 plans) |
 | 6 | File Conversion API | Complete (2/2 plans) |
-| 7 | Web Search API | Pending |
+| 7 | Web Search API | In Progress (1/2 plans) |
 | 8 | Email Sending API | Pending |
 | 9 | Audio Transcription API | Pending |
 | 10 | MCP Server Update + npm Publish | Pending |
@@ -39,6 +39,7 @@ progress:
 - [x] Phase 5 Plan 02: Docker validated, Railway deployed — https://x402-scraping-api-production.up.railway.app (2026-03-12)
 - [x] Phase 6 Plan 01: x402-conversion-api service built — 5 files, 523-line main.py; CONV-01 through CONV-05 satisfied (2026-03-13)
 - [x] Phase 6 Plan 02: Railway deployed — https://x402-conversion-api-production.up.railway.app; all endpoints verified in production (2026-03-13)
+- [x] Phase 7 Plan 01: x402-search-api service built — 5 files, 266-line main.py; SEARCH-01 through SEARCH-05 satisfied (2026-03-14)
 
 ## Accumulated Decisions
 
@@ -50,6 +51,9 @@ progress:
 - **httpx redirect SSRF re-validation:** Use `event_hooks={"response": [on_redirect]}` to call `validate_url_for_ssrf(location)` on every redirect hop — prevents TOCTOU bypass after initial validation
 - **WeasyPrint safe_url_fetcher:** Wrap `default_url_fetcher` with SSRF validation for all secondary resource fetches — required for CVE-2025-68616 mitigation
 - **Docker WeasyPrint smoke test:** Add `RUN python -c "from weasyprint import HTML; HTML(string='<p>test</p>').write_pdf()"` after pip install — catches missing C libs at build time, not at first request
+- **Per-wallet rate limit pattern:** Extract wallet from `decoded_payment["payload"]["authorization"]["from"]` after `@pay` runs; use `threading.Lock` for atomic check-and-increment; increment BEFORE upstream call to prevent quota manipulation via induced failures
+- **Tavily search_depth:** Always use `"basic"` (1 credit); `include_answer` always `bool` not `"advanced"` string — prevents 2-credit overages making $0.01 endpoint unprofitable
+- **request.state.x402_payer resolved:** Wallet is at `decoded_payment["payload"]["authorization"]["from"]` (not `x402_payer`) — confirmed via fastapi-x402 0.1.8 source inspection in Phase 7
 
 ## Open Questions
 
@@ -58,7 +62,7 @@ progress:
 | Verified sender domain for Resend | Phase 8 | Start DNS setup during Phase 7 to absorb 48-hour SPF/DKIM propagation delay |
 | Public URL for home server transcription | Phase 9 + 10 | Router port forwarding or Cloudflare Tunnel — confirm before publishing 1.1.0 |
 | ~~Docker build validation for Playwright image~~ | ~~Phase 5~~ | Resolved — pinned playwright==1.44.0, deployed successfully |
-| request.state.x402_payer attribute | Phase 5 Plan 02 | Per-wallet rate limit needs attribute name verified in fastapi-x402 0.1.8 source |
+| ~~request.state.x402_payer attribute~~ | ~~Phase 5 Plan 02~~ | Resolved — wallet at decoded_payment["payload"]["authorization"]["from"] (Phase 7 Plan 01) |
 
 ## Notes
 
@@ -80,4 +84,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-13 — Phase 6 complete. Conversion API deployed to Railway. Ready for Phase 7 (Web Search API).*
+*Last updated: 2026-03-14 — Phase 7 Plan 01 complete. x402-search-api built with AsyncTavilyClient + per-wallet rate limit. Ready for Phase 7 Plan 02 (Railway deployment).*
