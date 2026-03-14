@@ -3,12 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Universal Utility APIs
 status: unknown
-last_updated: "2026-03-14T00:03:16.149Z"
+last_updated: "2026-03-14T17:38:13Z"
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 16
   completed_plans: 16
+current_phase: 08-email-sending-api
+current_plan: "01"
 ---
 
 # State: x402 API Network — v1.1
@@ -24,7 +26,7 @@ progress:
 | 5 | Web Scraping API | Complete (2/2 plans) |
 | 6 | File Conversion API | Complete (2/2 plans) |
 | 7 | Web Search API | Complete (2/2 plans) |
-| 8 | Email Sending API | Pending |
+| 8 | Email Sending API | In Progress (1/2 plans complete) |
 | 9 | Audio Transcription API | Pending |
 | 10 | MCP Server Update + npm Publish | Pending |
 
@@ -41,6 +43,7 @@ progress:
 - [x] Phase 6 Plan 02: Railway deployed — https://x402-conversion-api-production.up.railway.app; all endpoints verified in production (2026-03-13)
 - [x] Phase 7 Plan 01: x402-search-api service built — 5 files, 266-line main.py; SEARCH-01 through SEARCH-05 satisfied (2026-03-14)
 - [x] Phase 7 Plan 02: Railway deployed — https://x402-search-api-production.up.railway.app; all endpoints verified in production; Tavily key rotated, billing limit set (2026-03-14)
+- [x] Phase 8 Plan 01: x402-email-api service built — 4 files, 313-line main.py; EMAIL-01 through EMAIL-05 satisfied (2026-03-14)
 
 ## Accumulated Decisions
 
@@ -55,12 +58,16 @@ progress:
 - **Per-wallet rate limit pattern:** Extract wallet from `decoded_payment["payload"]["authorization"]["from"]` after `@pay` runs; use `threading.Lock` for atomic check-and-increment; increment BEFORE upstream call to prevent quota manipulation via induced failures
 - **Tavily search_depth:** Always use `"basic"` (1 credit); `include_answer` always `bool` not `"advanced"` string — prevents 2-credit overages making $0.01 endpoint unprofitable
 - **request.state.x402_payer resolved:** Wallet is at `decoded_payment["payload"]["authorization"]["from"]` (not `x402_payer`) — confirmed via fastapi-x402 0.1.8 source inspection in Phase 7
+- **Resend SDK is synchronous:** Use plain `def` route handler (not `async def`) — SDK uses `requests` internally; FastAPI auto-routes to thread pool preventing event-loop blocking
+- **Per-domain rate limit added:** `check_and_increment_domain_limit` (5/wallet/domain/day) alongside wallet limit; both use single `_wallet_lock` to prevent deadlock
+- **HTML body detection heuristic:** `startswith("<") and ("</" or "/>")` — conservative, omit "text" key for HTML bodies; Resend auto-generates plain-text server-side
+- **ResendError mapping:** quota exhaustion → 503 (service-level, not caller fault); rate_limit → 503; auth errors → 500
 
 ## Open Questions
 
 | Question | Blocking | Notes |
 |----------|---------|-------|
-| Verified sender domain for Resend | Phase 8 | Start DNS setup during Phase 7 to absorb 48-hour SPF/DKIM propagation delay |
+| ~~Verified sender domain for Resend~~ | ~~Phase 8~~ | Resolved — domain jameswisdom.ink configured, FROM_ADDRESS hardcoded |
 | Public URL for home server transcription | Phase 9 + 10 | Router port forwarding or Cloudflare Tunnel — confirm before publishing 1.1.0 |
 | ~~Docker build validation for Playwright image~~ | ~~Phase 5~~ | Resolved — pinned playwright==1.44.0, deployed successfully |
 | ~~request.state.x402_payer attribute~~ | ~~Phase 5 Plan 02~~ | Resolved — wallet at decoded_payment["payload"]["authorization"]["from"] (Phase 7 Plan 01) |
@@ -85,4 +92,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-14 — Phase 7 complete. Search API deployed to Railway. Tavily key rotated, billing limit configured. Ready for Phase 8 (Email Sending API).*
+*Last updated: 2026-03-14 — Phase 8 Plan 01 complete. x402-email-api service built with Resend integration, per-wallet/domain rate limiting, PII-safe logging. All EMAIL requirements satisfied. Ready for Phase 8 Plan 02 (Docker validation + Railway deployment).*

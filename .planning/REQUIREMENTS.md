@@ -17,11 +17,11 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 
 ### Email Sending
 
-- [ ] **EMAIL-01**: Send email with to, subject, plain text body via Resend
-- [ ] **EMAIL-02**: HTML body support with auto plain-text fallback
-- [ ] **EMAIL-03**: Verified sender domain with SPF/DKIM/DMARC configured
-- [ ] **EMAIL-04**: Abuse limits — rate limit per wallet (10 sends/day)
-- [ ] **EMAIL-05**: Free test endpoint (sandbox mode, no real delivery)
+- [x] **EMAIL-01**: Send email with to, subject, plain text body via Resend
+- [x] **EMAIL-02**: HTML body support with auto plain-text fallback
+- [x] **EMAIL-03**: Verified sender domain with SPF/DKIM/DMARC configured
+- [x] **EMAIL-04**: Abuse limits — rate limit per wallet (10 sends/day)
+- [x] **EMAIL-05**: Free test endpoint (sandbox mode, no real delivery)
 
 ### Web Search
 
@@ -105,11 +105,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SCRAPE-03 | 5 | Complete |
 | SCRAPE-04 | 5 | Complete |
 | SCRAPE-05 | 5 | Complete |
-| EMAIL-01 | 8 | Pending |
-| EMAIL-02 | 8 | Pending |
-| EMAIL-03 | 8 | Pending |
-| EMAIL-04 | 8 | Pending |
-| EMAIL-05 | 8 | Pending |
+| EMAIL-01 | 8 | Complete |
+| EMAIL-02 | 8 | Complete |
+| EMAIL-03 | 8 | Complete |
+| EMAIL-04 | 8 | Complete |
+| EMAIL-05 | 8 | Complete |
 | SEARCH-01 | 7 | Complete |
 | SEARCH-02 | 7 | Complete |
 | SEARCH-03 | 7 | Complete |
