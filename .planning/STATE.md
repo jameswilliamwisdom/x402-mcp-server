@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Universal Utility APIs
 status: unknown
-last_updated: "2026-03-14T17:49:00Z"
+last_updated: "2026-03-14"
 progress:
   total_phases: 7
   completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
-current_phase: 08-email-sending-api
-current_plan: "02"
+  total_plans: 18
+  completed_plans: 18
+current_phase: 09-audio-transcription-api
+current_plan: "01"
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
 **Last updated:** 2026-03-14
-**Overall status:** Phase 8 Plan 02 at checkpoint — Docker validation complete (all 5 smoke tests passed, zero code changes required). Awaiting Railway deployment and production verification.
+**Overall status:** Phase 8 complete. Email API deployed to Railway at https://x402-email-api-production.up.railway.app; all EMAIL requirements verified in production. x402_send_email tool wired into src/index.ts. Next: Phase 9 (Audio Transcription API).
 
 ## Phase Status
 
@@ -26,7 +26,7 @@ current_plan: "02"
 | 5 | Web Scraping API | Complete (2/2 plans) |
 | 6 | File Conversion API | Complete (2/2 plans) |
 | 7 | Web Search API | Complete (2/2 plans) |
-| 8 | Email Sending API | In Progress (1/2 plans complete — Plan 02 at checkpoint) |
+| 8 | Email Sending API | Complete (2/2 plans) |
 | 9 | Audio Transcription API | Pending |
 | 10 | MCP Server Update + npm Publish | Pending |
 
@@ -44,7 +44,7 @@ current_plan: "02"
 - [x] Phase 7 Plan 01: x402-search-api service built — 5 files, 266-line main.py; SEARCH-01 through SEARCH-05 satisfied (2026-03-14)
 - [x] Phase 7 Plan 02: Railway deployed — https://x402-search-api-production.up.railway.app; all endpoints verified in production; Tavily key rotated, billing limit set (2026-03-14)
 - [x] Phase 8 Plan 01: x402-email-api service built — 4 files, 313-line main.py; EMAIL-01 through EMAIL-05 satisfied (2026-03-14)
-- [ ] Phase 8 Plan 02: Docker validated (all 5 smoke tests passed, zero code changes). Awaiting Railway deployment checkpoint.
+- [x] Phase 8 Plan 02: Railway deployed — https://x402-email-api-production.up.railway.app; all endpoints verified in production; x402_send_email tool wired into src/index.ts (2026-03-14)
 
 ## Accumulated Decisions
 
@@ -63,6 +63,7 @@ current_plan: "02"
 - **Per-domain rate limit added:** `check_and_increment_domain_limit` (5/wallet/domain/day) alongside wallet limit; both use single `_wallet_lock` to prevent deadlock
 - **HTML body detection heuristic:** `startswith("<") and ("</" or "/>")` — conservative, omit "text" key for HTML bodies; Resend auto-generates plain-text server-side
 - **ResendError mapping:** quota exhaustion → 503 (service-level, not caller fault); rate_limit → 503; auth errors → 500
+- **x402-email-api production URL:** https://x402-email-api-production.up.railway.app — Railway project `exemplary-reflection`, root dir `x402-email-api/`
 
 ## Open Questions
 
@@ -93,4 +94,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-14 — Phase 8 Plan 02 Task 1 complete. Docker build validated (python:3.11-slim), all 5 smoke tests passed with zero code changes. Stopped at checkpoint Task 2 (Railway deployment). User must create Railway service, set PAY_TO_ADDRESS + X402_NETWORK=base + RESEND_API_KEY, verify jameswisdom.ink domain in Resend dashboard, and confirm deployment at production URL.*
+*Last updated: 2026-03-14 — Phase 8 complete. Email API deployed to https://x402-email-api-production.up.railway.app; all EMAIL requirements verified. x402_send_email tool added to src/index.ts. Phase 9 (Audio Transcription API) is next.*

@@ -60,8 +60,10 @@ Plans:
 
 #### Phase 6: File Conversion API
 
-**Status:** In Progress (1/1 plan complete — 2026-03-13)
+**Status:** COMPLETE (2026-03-13)
 **Requirements:** CONV-01, CONV-02, CONV-03, CONV-04, CONV-05
+**Production URL:** https://x402-conversion-api-production.up.railway.app
+**Plans:** 2/2 plans complete
 
 **What ships:** A new Railway service (`x402-conversion-api`) with three conversion operations unified under one endpoint: image resize/reformat (Pillow), CSV-to-JSON (Python stdlib), and HTML-to-PDF (WeasyPrint). Input is a URL pointing to the source file plus the target format. Output is base64-encoded with a MIME type header. DOCX-to-PDF is explicitly deferred to v1.2 (LibreOffice adds ~300MB to the Docker image).
 
@@ -83,12 +85,14 @@ Plans:
 
 #### Phase 7: Web Search API
 
-**Status:** Planned (2/2 plans)
+**Status:** COMPLETE (2026-03-14)
 **Requirements:** SEARCH-01, SEARCH-02, SEARCH-03, SEARCH-04, SEARCH-05
+**Production URL:** https://x402-search-api-production.up.railway.app
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 07-01-PLAN.md — Build complete search service (main.py, Dockerfile, config, fixture)
-- [ ] 07-02-PLAN.md — Docker validation, Railway deployment, production verification
+- [x] 07-01-PLAN.md — Build complete search service (main.py, Dockerfile, config, fixture)
+- [x] 07-02-PLAN.md — Docker validation, Railway deployment, production verification
 
 **What ships:** A new Railway service (`x402-search-api`) wrapping the Tavily search API. Accepts a query string and returns ranked results (title, URL, snippet, relevance score). `include_answer` requests a Tavily-synthesized direct answer alongside results. `include_domains`/`exclude_domains` filter results to specific sources. Per-wallet daily query limit prevents cost spikes.
 
@@ -112,9 +116,10 @@ Plans:
 
 #### Phase 8: Email Sending API
 
-**Status:** In Progress (1/2 plans complete — Plan 02 at checkpoint awaiting Railway deployment)
+**Status:** COMPLETE (2026-03-14)
 **Requirements:** EMAIL-01, EMAIL-02, EMAIL-03, EMAIL-04, EMAIL-05
-**Plans:** 1/2 plans complete
+**Production URL:** https://x402-email-api-production.up.railway.app
+**Plans:** 2/2 plans complete
 
 **What ships:** A new Railway service (`x402-email-api`) that sends transactional email via the Resend SDK. Accepts `to`, `subject`, and a body (plain text or HTML; plain-text fallback auto-generated from HTML). Returns a Resend message ID as delivery confirmation. Sender domain is hardcoded to the verified domain; per-wallet daily send limit prevents abuse.
 
@@ -186,4 +191,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-03-09*
-*Last updated: 2026-03-14 — Phase 8 Plan 02 Task 1 complete (Docker validated). Awaiting checkpoint: Railway deployment.*
+*Last updated: 2026-03-14 — Phase 8 complete. Email API deployed to https://x402-email-api-production.up.railway.app; all EMAIL requirements verified; x402_send_email wired into src/index.ts. Next: Phase 9 (Audio Transcription API).*

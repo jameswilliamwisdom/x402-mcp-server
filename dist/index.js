@@ -39,6 +39,13 @@ const APIS = {
         description: "Real-time crypto market sentiment analysis",
         usesX402: true,
     },
+    email: {
+        name: "Email API",
+        baseUrl: "https://x402-email-api-production.up.railway.app",
+        price: "$0.01",
+        description: "Send transactional emails via Resend",
+        usesX402: true,
+    },
 };
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PRIVATE_KEY = process.env.X402_PRIVATE_KEY;
@@ -341,6 +348,62 @@ Returns: comprehensive analysis with market data, news, development activity, an
             coin: params.coin.toUpperCase(),
             ...data,
         });
+    }
+    catch (err) {
+        return errorResult(err.message);
+    }
+});
+// ─── Tool: x402_send_email ─────────────────────────────────────────────────
+server.tool("x402_send_email", `Send a transactional email via Resend.
+Price: $0.01 USDC per email.
+
+Supports plain text or HTML body. Per-wallet daily limit: 10 emails. Per-domain daily limit: 5 emails.
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: message_id from Resend.`, {
+    to: z.string().email().describe("Recipient email address"),
+    subject: z
+        .string()
+        .min(1)
+        .max(998)
+        .describe("Email subject (max 998 chars)"),
+    body: z
+        .string()
+        .min(1)
+        .max(102400)
+        .describe("Email body — HTML or plain text (max 100 KB)"),
+    reply_to: z
+        .string()
+        .email()
+        .optional()
+        .describe("Optional reply-to address"),
+}, async (params) => {
+    const base = APIS.email.baseUrl;
+    try {
+        const usePaid = !!PRIVATE_KEY;
+        if (usePaid) {
+            const payload = {
+                to: params.to,
+                subject: params.subject,
+                body: params.body,
+            };
+            if (params.reply_to)
+                payload.reply_to = params.reply_to;
+            const data = await apiPost(base, "/send", payload, true);
+            return textResult({
+                mode: "paid",
+                cost: "$0.01",
+                ...data,
+            });
+        }
+        else {
+            const data = await apiGet(base, "/send/test");
+            return textResult({
+                mode: "free_test",
+                note: "Free test — no email actually sent. Set X402_PRIVATE_KEY for real email delivery.",
+                ...data,
+            });
+        }
     }
     catch (err) {
         return errorResult(err.message);
