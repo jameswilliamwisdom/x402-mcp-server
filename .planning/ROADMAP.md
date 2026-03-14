@@ -141,10 +141,15 @@ Plans:
 
 #### Phase 9: Audio Transcription API
 
-**Status:** Pending
+**Status:** Planned
 **Requirements:** TRANS-01, TRANS-02, TRANS-03, TRANS-04, TRANS-05, TRANS-06
+**Plans:** 2 plans
 
-**What ships:** A self-hosted FastAPI service on the home Mac server (10.0.0.2, macOS Monterey, Intel x86_64) at port 8889. Accepts an audio file URL, downloads it, and transcribes via `faster-whisper` with `compute_type="int8"`. Returns transcript text, detected language, and optional word-level segment timestamps. A hand-rolled x402 payment middleware handles USDC micropayment gating (fastapi-x402 is not used — untested on macOS). nginx proxies port 8889. A launchd plist persists the process across reboots.
+Plans:
+- [ ] 09-01-PLAN.md — Build complete transcription service (main.py, config.py, requirements.txt)
+- [ ] 09-02-PLAN.md — Home server deployment, Cloudflare Tunnel setup, production verification
+
+**What ships:** A self-hosted FastAPI service on the home Mac server (10.0.0.2, macOS Monterey, Intel x86_64) at port 8889. Accepts an audio file URL, downloads it, and transcribes via `faster-whisper` with `compute_type="int8"`. Returns transcript text, detected language, and optional word-level segment timestamps. Payment gated via `fastapi-x402` (same pattern as Railway services). Cloudflare Tunnel provides public access at `transcribe.jameswisdom.ink`. A launchd plist persists the process across reboots.
 
 **Key constraints:**
 - `faster-whisper ^1.2.1` with `compute_type="int8"` — MLX Whisper is Apple Silicon only and will not install on x86_64 (confirm with `uname -m` before installing)
