@@ -45,7 +45,7 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 - [x] **TRANS-02**: Auto language detection with detected language in response
 - [x] **TRANS-03**: Optional word-level timestamps
 - [x] **TRANS-04**: Language hint parameter for known languages
-- [x] **TRANS-05**: Size/duration limits (25MB / 60 min) with clear error messages
+- [x] **TRANS-05**: Size/duration limits (25MB / 10 min) with clear error messages
 - [x] **TRANS-06**: Free test endpoint with fixture data
 
 ### MCP Server + Publish
