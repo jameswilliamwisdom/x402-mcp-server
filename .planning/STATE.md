@@ -3,21 +3,21 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Universal Utility APIs
 status: unknown
-last_updated: "2026-03-14"
+last_updated: "2026-03-15"
 progress:
   total_phases: 7
   completed_phases: 7
   total_plans: 18
   completed_plans: 18
 current_phase: 09-audio-transcription-api
-current_plan: "01"
+current_plan: "02"
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
-**Last updated:** 2026-03-14
-**Overall status:** Phase 8 complete. Email API deployed to Railway at https://x402-email-api-production.up.railway.app; all EMAIL requirements verified in production. x402_send_email tool wired into src/index.ts. Next: Phase 9 (Audio Transcription API).
+**Last updated:** 2026-03-15
+**Overall status:** Phase 9 Plan 01 complete. x402-transcription-api service built — 3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied at code level. Next: Phase 9 Plan 02 (home server deployment: launchd plist, cloudflared tunnel, nginx).
 
 ## Phase Status
 
@@ -27,7 +27,7 @@ current_plan: "01"
 | 6 | File Conversion API | Complete (2/2 plans) |
 | 7 | Web Search API | Complete (2/2 plans) |
 | 8 | Email Sending API | Complete (2/2 plans) |
-| 9 | Audio Transcription API | Pending |
+| 9 | Audio Transcription API | In Progress (1/2 plans) |
 | 10 | MCP Server Update + npm Publish | Pending |
 
 ## Completed
@@ -45,6 +45,7 @@ current_plan: "01"
 - [x] Phase 7 Plan 02: Railway deployed — https://x402-search-api-production.up.railway.app; all endpoints verified in production; Tavily key rotated, billing limit set (2026-03-14)
 - [x] Phase 8 Plan 01: x402-email-api service built — 4 files, 313-line main.py; EMAIL-01 through EMAIL-05 satisfied (2026-03-14)
 - [x] Phase 8 Plan 02: Railway deployed — https://x402-email-api-production.up.railway.app; all endpoints verified in production; x402_send_email tool wired into src/index.ts (2026-03-14)
+- [x] Phase 9 Plan 01: x402-transcription-api service built — 3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied (2026-03-15)
 
 ## Accumulated Decisions
 
@@ -64,6 +65,9 @@ current_plan: "01"
 - **HTML body detection heuristic:** `startswith("<") and ("</" or "/>")` — conservative, omit "text" key for HTML bodies; Resend auto-generates plain-text server-side
 - **ResendError mapping:** quota exhaustion → 503 (service-level, not caller fault); rate_limit → 503; auth errors → 500
 - **x402-email-api production URL:** https://x402-email-api-production.up.railway.app — Railway project `exemplary-reflection`, root dir `x402-email-api/`
+- **faster-whisper CPU config:** WhisperModel(small, cpu, int8, cpu_threads=4) — greedy decoding (beam_size=1, best_of=1, temperature=0) for predictable memory; cpu_threads must match physical cores (sysctl -n hw.physicalcpu)
+- **PyAV for audio duration:** Use av.open(path).duration/1_000_000 (bundled with faster-whisper) — no system ffmpeg required; avoids launchd PATH pitfall
+- **CTranslate2 thread safety:** threading.Lock serializes WhisperModel access; list(segments) MUST be called inside lock block to force lazy generator evaluation before lock release
 
 ## Open Questions
 
@@ -94,4 +98,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-14 — Phase 8 complete. Email API deployed to https://x402-email-api-production.up.railway.app; all EMAIL requirements verified. x402_send_email tool added to src/index.ts. Phase 9 (Audio Transcription API) is next.*
+*Last updated: 2026-03-15 — Phase 9 Plan 01 complete. x402-transcription-api built (3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied). Phase 9 Plan 02 (home server deployment) is next.*

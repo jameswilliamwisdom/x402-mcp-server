@@ -141,12 +141,12 @@ Plans:
 
 #### Phase 9: Audio Transcription API
 
-**Status:** Planned
+**Status:** In Progress (1/2 plans complete)
 **Requirements:** TRANS-01, TRANS-02, TRANS-03, TRANS-04, TRANS-05, TRANS-06
 **Plans:** 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Build complete transcription service (main.py, config.py, requirements.txt)
+- [x] 09-01-PLAN.md — Build complete transcription service (main.py, config.py, requirements.txt) — 2026-03-15
 - [ ] 09-02-PLAN.md — Home server deployment, Cloudflare Tunnel setup, production verification
 
 **What ships:** A self-hosted FastAPI service on the home Mac server (10.0.0.2, macOS Monterey, Intel x86_64) at port 8889. Accepts an audio file URL, downloads it, and transcribes via `faster-whisper` with `compute_type="int8"`. Returns transcript text, detected language, and optional word-level segment timestamps. Payment gated via `fastapi-x402` (same pattern as Railway services). Cloudflare Tunnel provides public access at `transcribe.jameswisdom.ink`. A launchd plist persists the process across reboots.
@@ -196,4 +196,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-03-09*
-*Last updated: 2026-03-14 — Phase 8 complete. Email API deployed to https://x402-email-api-production.up.railway.app; all EMAIL requirements verified; x402_send_email wired into src/index.ts. Next: Phase 9 (Audio Transcription API).*
+*Last updated: 2026-03-15 — Phase 9 Plan 01 complete. x402-transcription-api service built (3 files, 537-line main.py); TRANS-01 through TRANS-06 satisfied at code level. Next: Phase 9 Plan 02 (home server deployment).*

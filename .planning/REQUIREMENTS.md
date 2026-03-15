@@ -41,12 +41,12 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 
 ### Audio Transcription
 
-- [ ] **TRANS-01**: Given an audio URL, return text transcript via faster-whisper on home server
-- [ ] **TRANS-02**: Auto language detection with detected language in response
-- [ ] **TRANS-03**: Optional word-level timestamps
-- [ ] **TRANS-04**: Language hint parameter for known languages
-- [ ] **TRANS-05**: Size/duration limits (25MB / 60 min) with clear error messages
-- [ ] **TRANS-06**: Free test endpoint with fixture data
+- [x] **TRANS-01**: Given an audio URL, return text transcript via faster-whisper on home server
+- [x] **TRANS-02**: Auto language detection with detected language in response
+- [x] **TRANS-03**: Optional word-level timestamps
+- [x] **TRANS-04**: Language hint parameter for known languages
+- [x] **TRANS-05**: Size/duration limits (25MB / 60 min) with clear error messages
+- [x] **TRANS-06**: Free test endpoint with fixture data
 
 ### MCP Server + Publish
 
@@ -120,12 +120,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONV-03 | 6 | Complete |
 | CONV-04 | 6 | Complete |
 | CONV-05 | 6 | Complete |
-| TRANS-01 | 9 | Pending |
-| TRANS-02 | 9 | Pending |
-| TRANS-03 | 9 | Pending |
-| TRANS-04 | 9 | Pending |
-| TRANS-05 | 9 | Pending |
-| TRANS-06 | 9 | Pending |
+| TRANS-01 | 9 | Complete |
+| TRANS-02 | 9 | Complete |
+| TRANS-03 | 9 | Complete |
+| TRANS-04 | 9 | Complete |
+| TRANS-05 | 9 | Complete |
+| TRANS-06 | 9 | Complete |
 | MCP-01 | 10 | Pending |
 | MCP-02 | 10 | Pending |
 | MCP-03 | 10 | Pending |
