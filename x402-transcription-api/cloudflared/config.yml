@@ -1,0 +1,35 @@
+# Cloudflare Tunnel configuration for x402 Transcription API
+# Routes: transcribe.jameswisdom.ink -> localhost:8889 (uvicorn)
+#
+# Setup steps (run on home server after 'cloudflared tunnel create transcription-api'):
+#   1. cloudflared tunnel create transcription-api
+#      -> note the UUID printed (e.g. a1b2c3d4-...)
+#   2. cloudflared tunnel route dns transcription-api transcribe.jameswisdom.ink
+#   3. Replace __TUNNEL_UUID__ with the UUID from step 1
+#   4. Replace __HOME_DIR__ with your absolute home directory (e.g. /Users/james)
+#   5. cp cloudflared/config.yml ~/.cloudflared/config.yml
+#   6. cloudflared tunnel ingress validate    # verify no config errors
+#   7. cloudflared tunnel run transcription-api   # test manually first
+#
+# KNOWN BUG (P10): After 'sudo cloudflared service install', inspect
+# /Library/LaunchDaemons/com.cloudflare.cloudflared.plist — verify ProgramArguments
+# contains <string>tunnel</string><string>run</string>. Add them if missing.
+
+tunnel: __TUNNEL_UUID__
+credentials-file: __HOME_DIR__/.cloudflared/__TUNNEL_UUID__.json
+
+originRequest:
+  # connectTimeout: time to establish TCP connection to uvicorn
+  connectTimeout: 30s
+  # keepAliveTimeout: how long to keep idle connections open
+  # Set to 90s to handle slow 10-minute audio transcriptions (P11 mitigation)
+  keepAliveTimeout: 90s
+  # tcpKeepAlive: interval for TCP keepalive probes
+  tcpKeepAlive: 30s
+
+ingress:
+  # Route transcribe.jameswisdom.ink to uvicorn on localhost:8889
+  - hostname: transcribe.jameswisdom.ink
+    service: http://localhost:8889
+  # Catch-all REQUIRED — tunnel refuses to start without a final rule
+  - service: http_status:404

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- Label: unique reverse-DNS identifier for this LaunchAgent -->
+    <key>Label</key>
+    <string>com.x402.transcription</string>
+
+    <!--
+        ProgramArguments: absolute paths required — launchd does not expand ~ or $HOME.
+        __SERVICE_DIR__ is replaced by deploy.sh with the absolute path to x402-transcription-api/.
+        Using .venv/bin/uvicorn avoids system Python conflicts and stays in the venv.
+        --forwarded-allow-ips=* required for Cloudflare Tunnel to pass X-Forwarded-For headers.
+    -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>__SERVICE_DIR__/.venv/bin/uvicorn</string>
+        <string>main:app</string>
+        <string>--host</string>
+        <string>127.0.0.1</string>
+        <string>--port</string>
+        <string>8889</string>
+        <string>--forwarded-allow-ips=*</string>
+    </array>
+
+    <!-- WorkingDirectory: uvicorn imports main.py from here -->
+    <key>WorkingDirectory</key>
+    <string>__SERVICE_DIR__</string>
+
+    <!--
+        KeepAlive: auto-restart on crash (launchd will revive the process if it exits).
+        RunAtLoad: start immediately when the plist is loaded (on user login).
+    -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!--
+        ThrottleInterval: 30 seconds between restart attempts.
+        CRITICAL (P8): Without this, rapid crashes cause launchd to silently unload the service.
+        Check 'launchctl list | grep x402' if service seems missing after a crash loop.
+    -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <!-- Log paths: readable via 'tail -f /tmp/com.x402.transcription.stderr.log' -->
+    <key>StandardOutPath</key>
+    <string>/tmp/com.x402.transcription.stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/com.x402.transcription.stderr.log</string>
+
+    <!--
+        EnvironmentVariables:
+        - PATH must include /usr/local/bin for Intel Homebrew tools (ffprobe, etc.) — P7.
+        - PAY_TO_ADDRESS, CDP_API_KEY_ID, CDP_API_KEY_SECRET: fill in after deploy.sh copies plist.
+          Run: nano ~/Library/LaunchAgents/com.x402.transcription.plist
+          Then: launchctl load ~/Library/LaunchAgents/com.x402.transcription.plist
+    -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>PAY_TO_ADDRESS</key>
+        <string>FILL_IN_AT_DEPLOY</string>
+        <key>CDP_API_KEY_ID</key>
+        <string>FILL_IN_AT_DEPLOY</string>
+        <key>CDP_API_KEY_SECRET</key>
+        <string>FILL_IN_AT_DEPLOY</string>
+    </dict>
+</dict>
+</plist>
