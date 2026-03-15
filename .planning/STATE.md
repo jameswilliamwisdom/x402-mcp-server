@@ -3,19 +3,19 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Universal Utility APIs
 status: unknown
-last_updated: "2026-03-15T18:59:59.879Z"
+last_updated: "2026-03-15T19:30:00.000Z"
 progress:
   total_phases: 10
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 21
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
-**Last updated:** 2026-03-15 (Phase 10 Plan 01)
-**Overall status:** Phase 10 Plan 01 complete. src/index.ts updated to 11 tools (4 new + email review), 8 APIS entries, 3000ms health timeout, version 1.1.0. README and package.json updated. Next: Phase 10 Plan 02 (build + npm publish).
+**Last updated:** 2026-03-15 (Phase 10 Plan 02)
+**Overall status:** MILESTONE COMPLETE. x402-mcp-server@1.1.0 published to npm. All 10 phases and 21 plans complete. dist/index.js compiled with shebang, 5-file tarball verified clean, passkey auth used for publish, git tag v1.1.0 created.
 
 ## Phase Status
 
@@ -26,7 +26,7 @@ progress:
 | 7 | Web Search API | Complete (2/2 plans) |
 | 8 | Email Sending API | Complete (2/2 plans) |
 | 9 | Audio Transcription API | Complete (2/2 plans) |
-| 10 | MCP Server Update + npm Publish | In Progress (1/2 plans) |
+| 10 | MCP Server Update + npm Publish | Complete (2/2 plans) |
 
 ## Completed
 
@@ -46,6 +46,7 @@ progress:
 - [x] Phase 9 Plan 01: x402-transcription-api service built — 3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied (2026-03-15)
 - [x] Phase 9 Plan 02: x402-transcription-api deployed to home server — launchd plist + Cloudflare Tunnel; transcribe.jameswisdom.ink live (2026-03-15)
 - [x] Phase 10 Plan 01: src/index.ts updated to 11 tools + 8 APIS entries; README + package.json updated; version 1.1.0; TypeScript compiles clean (2026-03-15)
+- [x] Phase 10 Plan 02: x402-mcp-server@1.1.0 published to npm; dist compiled with shebang; tarball verified 5 files only; git tag v1.1.0 created; user confirmed npmjs.com page correct (2026-03-15)
 
 ## Accumulated Decisions
 
@@ -70,6 +71,7 @@ progress:
 - **CTranslate2 thread safety:** threading.Lock serializes WhisperModel access; list(segments) MUST be called inside lock block to force lazy generator evaluation before lock release
 - [Phase 10-mcp-server-update-npm-publish]: Health check timeout reduced to 3000ms for 8-API responsiveness in x402_network_info
 - [Phase 10-mcp-server-update-npm-publish]: APIS dict as sole source of truth for baseUrls — handlers always reference APIS.<key>.baseUrl
+- [Phase 10-02]: npm passkey auth via --auth-type=web — use when account uses iCloud Keychain passkeys, not TOTP
 
 ## Open Questions
 
@@ -100,4 +102,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-15 — Phase 10 Plan 01 complete. src/index.ts updated to 11 tools, 8 APIS entries, version 1.1.0. README and package.json updated. Phase 10 Plan 02 (build + npm publish) is next.*
+*Last updated: 2026-03-15 — Phase 10 Plan 02 complete. x402-mcp-server@1.1.0 published to npm. Milestone v1.1 (Universal Utility APIs) fully shipped. All 10 phases, 21 plans complete.*

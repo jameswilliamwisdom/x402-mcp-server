@@ -51,7 +51,7 @@ Requirements for milestone v1.1 — Universal Utility APIs. Each maps to roadmap
 ### MCP Server + Publish
 
 - [x] **MCP-01**: 5 new tools registered in src/index.ts with Zod validation
-- [ ] **MCP-02**: npm publish as x402-mcp-server@1.1.0
+- [x] **MCP-02**: npm publish as x402-mcp-server@1.1.0
 - [x] **MCP-03**: x402_network_info tool updated with health checks for all 8 APIs
 
 ## v2 Requirements
@@ -127,7 +127,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TRANS-05 | 9 | Complete |
 | TRANS-06 | 9 | Complete |
 | MCP-01 | 10 | Complete |
-| MCP-02 | 10 | Pending |
+| MCP-02 | 10 | Complete |
 | MCP-03 | 10 | Complete |
 
 **Coverage:**
