@@ -46,6 +46,34 @@ const APIS = {
         description: "Send transactional emails via Resend",
         usesX402: true,
     },
+    scraping: {
+        name: "Scraping API",
+        baseUrl: "https://x402-scraping-api-production.up.railway.app",
+        price: "$0.02",
+        description: "Scrape any URL and return structured JSON: markdown, links, tables, images, metadata",
+        usesX402: true,
+    },
+    conversion: {
+        name: "Conversion API",
+        baseUrl: "https://x402-conversion-api-production.up.railway.app",
+        price: "$0.02",
+        description: "Convert files: image resize/reformat, CSV to JSON, HTML to PDF",
+        usesX402: true,
+    },
+    search: {
+        name: "Search API",
+        baseUrl: "https://x402-search-api-production.up.railway.app",
+        price: "$0.01",
+        description: "Web search via Tavily — ranked results with title, URL, snippet, score",
+        usesX402: true,
+    },
+    transcription: {
+        name: "Transcription API",
+        baseUrl: "https://transcribe.jameswisdom.ink",
+        price: "$0.05",
+        description: "Transcribe audio from any URL — auto language detection, word timestamps, 25MB/10min limits",
+        usesX402: true,
+    },
 };
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PRIVATE_KEY = process.env.X402_PRIVATE_KEY;
@@ -105,7 +133,7 @@ async function apiPost(baseUrl, path, body, usePayment = false) {
 async function checkHealth(baseUrl) {
     try {
         const res = await fetch(`${baseUrl}/health`, {
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(3000),
         });
         if (res.ok) {
             const data = await res.json();
@@ -113,7 +141,7 @@ async function checkHealth(baseUrl) {
         }
         // Fallback to /
         const rootRes = await fetch(`${baseUrl}/`, {
-            signal: AbortSignal.timeout(5000),
+            signal: AbortSignal.timeout(3000),
         });
         if (rootRes.ok) {
             const data = await rootRes.json();
@@ -128,7 +156,7 @@ async function checkHealth(baseUrl) {
 // ─── MCP Server ──────────────────────────────────────────────────────────────
 const server = new McpServer({
     name: "x402-api-network",
-    version: "1.0.0",
+    version: "1.1.0",
 });
 // ─── Tool: x402_network_info (FREE) ─────────────────────────────────────────
 server.tool("x402_network_info", `List all APIs in the x402 API Network with pricing, status, and capabilities.
@@ -355,7 +383,7 @@ Returns: comprehensive analysis with market data, news, development activity, an
 });
 // ─── Tool: x402_send_email ─────────────────────────────────────────────────
 server.tool("x402_send_email", `Send a transactional email via Resend.
-Price: $0.01 USDC per email.
+Price: $0.01 USDC per email (paid mode) | Free test: returns fixture data.
 
 Supports plain text or HTML body. Per-wallet daily limit: 10 emails. Per-domain daily limit: 5 emails.
 Without X402_PRIVATE_KEY, only the free test endpoint is available.
@@ -401,6 +429,182 @@ Returns: message_id from Resend.`, {
             return textResult({
                 mode: "free_test",
                 note: "Free test — no email actually sent. Set X402_PRIVATE_KEY for real email delivery.",
+                ...data,
+            });
+        }
+    }
+    catch (err) {
+        return errorResult(err.message);
+    }
+});
+// ─── Tool: x402_scrape_url ──────────────────────────────────────────────────
+server.tool("x402_scrape_url", `Scrape a web page and return structured JSON with markdown content, links, tables, images, and metadata.
+Price: $0.02 USDC per scrape (paid mode) | Free test: returns fixture data.
+
+Supports JS-rendered pages via Playwright. Optional wait_for CSS selector for async SPA content.
+Hard timeout: 8 seconds total (page load + selector wait combined).
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: markdown text, extracted links, tables, images, page metadata, and success/failure status.`, {
+    url: z.string().url().describe("URL to scrape (http/https, max 2048 chars)"),
+    wait_for: z.string().max(500).optional()
+        .describe("CSS selector to wait for before extracting (for SPAs, e.g. '.article-body')"),
+}, async (params) => {
+    const base = APIS.scraping.baseUrl;
+    try {
+        const usePaid = !!PRIVATE_KEY;
+        if (usePaid) {
+            const payload = { url: params.url };
+            if (params.wait_for)
+                payload.wait_for = params.wait_for;
+            const data = await apiPost(base, "/scrape", payload, true);
+            return textResult({ mode: "paid", cost: "$0.02", ...data });
+        }
+        else {
+            const data = await apiGet(base, "/scrape/test");
+            return textResult({
+                mode: "free_test",
+                note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for live scraping.",
+                ...data,
+            });
+        }
+    }
+    catch (err) {
+        return errorResult(err.message);
+    }
+});
+// ─── Tool: x402_convert_file ────────────────────────────────────────────────
+server.tool("x402_convert_file", `Convert files between formats — image resize/reformat, CSV to JSON, or HTML to PDF.
+Price: $0.02 USDC per conversion (paid mode) | Free test: returns fixture data.
+
+Supported conversions:
+- image: resize/reformat an image from a URL (Pillow) — outputs base64-encoded bytes
+- csv: convert a CSV URL to JSON array
+- html_pdf: render HTML from a URL to PDF — outputs base64-encoded bytes
+
+Input limit: 10MB source file. Output limit: 8MB (before base64 encoding).
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: base64-encoded output bytes with MIME type, or JSON array for csv type.`, {
+    url: z.string().url().describe("URL of the file to convert (public, http/https, max 10MB)"),
+    type: z.enum(["image", "csv", "html_pdf"])
+        .describe("Conversion type: image (resize/reformat), csv (CSV to JSON), html_pdf (HTML to PDF)"),
+    format: z.enum(["jpeg", "png", "webp", "gif"]).optional()
+        .describe("Output image format (only for type='image', default: jpeg)"),
+    width: z.number().int().min(1).max(8000).optional()
+        .describe("Target width in pixels (only for type='image', preserves aspect ratio if height omitted)"),
+    height: z.number().int().min(1).max(8000).optional()
+        .describe("Target height in pixels (only for type='image', preserves aspect ratio if width omitted)"),
+}, async (params) => {
+    const base = APIS.conversion.baseUrl;
+    try {
+        const usePaid = !!PRIVATE_KEY;
+        if (usePaid) {
+            const payload = { type: params.type, url: params.url };
+            if (params.format !== undefined)
+                payload.format = params.format;
+            if (params.width !== undefined)
+                payload.width = params.width;
+            if (params.height !== undefined)
+                payload.height = params.height;
+            const data = await apiPost(base, "/convert", payload, true);
+            return textResult({ mode: "paid", cost: "$0.02", ...data });
+        }
+        else {
+            const data = await apiGet(base, "/convert/test");
+            return textResult({
+                mode: "free_test",
+                note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for live conversion.",
+                ...data,
+            });
+        }
+    }
+    catch (err) {
+        return errorResult(err.message);
+    }
+});
+// ─── Tool: x402_web_search ──────────────────────────────────────────────────
+server.tool("x402_web_search", `Search the web and return ranked results via Tavily — title, URL, snippet, and relevance score.
+Price: $0.01 USDC per search (paid mode) | Free test: returns fixture data.
+
+Optional synthesized answer summarizing results. Use include_domains/exclude_domains for focused research.
+Per-wallet daily limit: 50 queries (resets midnight UTC).
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: query, results array (title, url, snippet, score), optional answer field.`, {
+    query: z.string().min(1).max(400).describe("Search query (max 400 chars)"),
+    max_results: z.number().int().min(1).max(10).default(5)
+        .describe("Number of results to return (1-10, default: 5)"),
+    include_answer: z.boolean().default(false)
+        .describe("Include a synthesized answer above the results (may be null if Tavily cannot synthesize)"),
+    include_domains: z.array(z.string()).max(20).optional()
+        .describe("Restrict results to these domains only (max 20)"),
+    exclude_domains: z.array(z.string()).max(20).optional()
+        .describe("Exclude these domains from results (max 20)"),
+}, async (params) => {
+    const base = APIS.search.baseUrl;
+    try {
+        const usePaid = !!PRIVATE_KEY;
+        if (usePaid) {
+            const payload = {
+                query: params.query,
+                max_results: params.max_results,
+                include_answer: params.include_answer,
+            };
+            if (params.include_domains)
+                payload.include_domains = params.include_domains;
+            if (params.exclude_domains)
+                payload.exclude_domains = params.exclude_domains;
+            const data = await apiPost(base, "/search", payload, true);
+            return textResult({ mode: "paid", cost: "$0.01", ...data });
+        }
+        else {
+            const data = await apiGet(base, "/search/test");
+            return textResult({
+                mode: "free_test",
+                note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for live web search.",
+                ...data,
+            });
+        }
+    }
+    catch (err) {
+        return errorResult(err.message);
+    }
+});
+// ─── Tool: x402_transcribe_audio ────────────────────────────────────────────
+server.tool("x402_transcribe_audio", `Transcribe an audio file from a URL using faster-whisper with auto language detection.
+Price: $0.05 USDC per transcription (paid mode) | Free test: returns fixture data.
+
+Supports: MP3, WAV, M4A, FLAC, OGG, and most audio formats.
+Limits: 25MB file size, 10-minute duration. Payment is charged on download; duration refusals are still charged.
+Note: transcription can take 30–120 seconds for longer files (CPU-based, requests queue serially).
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: transcript text, detected language, language confidence, duration, and segment or word timestamps.`, {
+    url: z.string().url().describe("URL of the audio file to transcribe (public, http/https, max 25MB, max 10 min)"),
+    language: z.string().optional()
+        .describe("ISO 639-1 language hint (e.g. 'en', 'fr', 'es') — omit for auto-detection"),
+    word_timestamps: z.boolean().default(false)
+        .describe("Return word-level timestamps instead of segment-level (default: false)"),
+}, async (params) => {
+    const base = APIS.transcription.baseUrl;
+    try {
+        const usePaid = !!PRIVATE_KEY;
+        if (usePaid) {
+            const payload = {
+                url: params.url,
+                word_timestamps: params.word_timestamps,
+            };
+            if (params.language)
+                payload.language = params.language;
+            const data = await apiPost(base, "/transcribe", payload, true);
+            return textResult({ mode: "paid", cost: "$0.05", ...data });
+        }
+        else {
+            const data = await apiGet(base, "/transcribe/test");
+            return textResult({
+                mode: "free_test",
+                note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for real audio transcription.",
                 ...data,
             });
         }
