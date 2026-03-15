@@ -174,8 +174,13 @@ Plans:
 
 #### Phase 10: MCP Server Update + npm Publish
 
-**Status:** Pending
+**Status:** Planning Complete
 **Requirements:** MCP-01, MCP-02, MCP-03
+**Plans:** 2 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Add 4 APIS entries, 4 new tools, review email consistency, reduce health timeout, bump version, update README and package.json metadata
+- [ ] 10-02-PLAN.md — Build, verify artifact, npm publish as 1.1.0, post-publish verification, git tag v1.1.0
 
 **What ships:** `src/index.ts` updated with 5 new tool registrations and 5 new APIS dict entries. All production service URLs (from Phases 5-9) are wired in. `x402_network_info` health check expanded to cover all 8 APIs. Version bumped to `1.1.0`. Package published as `x402-mcp-server@1.1.0` on npm.
 
@@ -196,4 +201,4 @@ Plans:
 ---
 
 *Roadmap created: 2026-03-09*
-*Last updated: 2026-03-15 — Phase 9 Plan 01 complete. x402-transcription-api service built (3 files, 537-line main.py); TRANS-01 through TRANS-06 satisfied at code level. Next: Phase 9 Plan 02 (home server deployment).*
+*Last updated: 2026-03-15 — Phase 10 planned (2 plans in 2 waves). Plan 01: source + docs update (Wave 1). Plan 02: build + publish + tag (Wave 2).*
