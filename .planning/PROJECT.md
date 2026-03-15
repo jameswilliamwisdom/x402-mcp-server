@@ -2,30 +2,27 @@
 
 ## What This Is
 
-Infrastructure for the AI agent economy using the x402 protocol. A unified MCP server that wraps pay-per-use universal utility APIs as agent-callable tools with automatic USDC micropayment handling on Base. The strategic position is "AWS primitives for agents" — stateless, high-frequency, micropayment-optimized utilities that every agent workflow needs regardless of domain.
+Infrastructure for the AI agent economy using the x402 protocol. A unified MCP server (`x402-mcp-server@1.1.0` on npm) wrapping 8 pay-per-use utility APIs as 11 agent-callable tools with automatic USDC micropayment handling on Base. The strategic position is "AWS primitives for agents" — stateless, high-frequency, micropayment-optimized utilities that every agent workflow needs regardless of domain.
 
 ## Core Value
 
 AI agents can discover and pay for useful APIs with zero integration friction — one npm install, one env var, automatic micropayments.
 
-## Current Milestone: v1.1 Universal Utility APIs
-
-**Goal:** Add 5 new APIs to the x402 network, expanding from 3 to 8 backend services and from 6 to ~16 MCP tools. Each API follows the proven pattern: stateless, sub-$0.10, no account required, free test endpoint.
-
-**Target APIs:**
-- Web Scraping + Structured Extraction (Playwright + Cheerio, Railway)
-- Email Sending (Resend backend, Railway)
-- Web Search (search engine TBD — research during planning, Railway)
-- File Conversion (doc-to-pdf, image resize, html-to-pdf, csv-to-json, Railway)
-- Audio Transcription (MLX Whisper, self-hosted on home Mac server)
-
 ## Current State
 
-**Shipped:** v1.0 (2026-03-12) — npm Publish + Brand Site
-- `x402-mcp-server@1.0.0` on npm — `npx -y x402-mcp-server`
+**Shipped:** v1.1 (2026-03-15) — Universal Utility APIs
+- `x402-mcp-server@1.1.0` on npm — 11 tools across 8 APIs
+- 5 Railway services: scraping ($0.02), conversion ($0.02), search ($0.01), email ($0.01), + 3 original
+- 1 home-server service: transcription ($0.05) at `transcribe.jameswisdom.ink`
+- All tools have free test endpoints — no USDC required to try
 - Brand site live at `http://10.0.0.2:8888` (local network, HTTP only)
-- 6 MCP tools across 3 APIs, all with free test endpoints
-- Full developer docs: Getting Started, API Reference, Wallet Setup
+
+**Production URLs:**
+- Scraping: https://x402-scraping-api-production.up.railway.app
+- Conversion: https://x402-conversion-api-production.up.railway.app
+- Search: https://x402-search-api-production.up.railway.app
+- Email: https://x402-email-api-production.up.railway.app
+- Transcription: https://transcribe.jameswisdom.ink
 
 ## Requirements
 
@@ -36,48 +33,51 @@ AI agents can discover and pay for useful APIs with zero integration friction �
 - ✓ npm package published as `x402-mcp-server` with comprehensive README — v1.0
 - ✓ Brand site with marketing + developer docs, deployed to home server — v1.0
 - ✓ Package security: files whitelist, Zod validation, shebang, publint — v1.0
+- ✓ Web scraping API: URL → structured JSON with Playwright + trafilatura — v1.1
+- ✓ File conversion API: image resize, CSV→JSON, HTML→PDF — v1.1
+- ✓ Web search API: Tavily-backed query → ranked results — v1.1
+- ✓ Email sending API: Resend-backed transactional email — v1.1
+- ✓ Audio transcription API: faster-whisper on home server — v1.1
+- ✓ MCP server updated to 11 tools, published as v1.1.0 — v1.1
+- ✓ Free test endpoints for all APIs — v1.1
 
 ### Active
 
-- [ ] Web scraping API: URL → structured JSON (text, links, metadata, tables)
-- [ ] Email sending API: stateless send via Resend (to/from/subject/body)
-- [ ] Web search API: query → top N results as structured JSON
-- [ ] File conversion API: format-to-format transformations
-- [ ] Audio transcription API: audio URL → text transcript (MLX Whisper)
-- [ ] MCP server updated with new tools + npm publish v1.1
-- [ ] Free test endpoints for all new APIs
+(None — next milestone not yet defined)
 
 ### Out of Scope
 
-- Brand site / docs updates — separate milestone after APIs ship
+- Brand site / docs updates for v1.1 APIs — future milestone
 - Developer platform / marketplace — future milestone
 - Third-party API hosting — future milestone
 - Own L2 chain — far future
 - Mobile app — not planned
 - User accounts / dashboard — not this project
-- Domain / TLS / public access — separate milestone
-- Crypto sentiment refactoring — works, leave it alone
+- DOCX→PDF conversion — LibreOffice adds 300MB to Docker image
+- Speaker diarization — requires separate model
+- Real-time streaming transcription — breaks stateless model
+- Full site crawl — multi-page scraping
+- Email attachments, CC/BCC — scope expansion
 
 ## Context
 
-- **Stack:** TypeScript, @modelcontextprotocol/sdk, viem, x402-fetch
-- **API pattern:** Python/FastAPI on Railway with fastapi-x402 (proven with screenshot + PDF)
-- **Wallet:** 0x6b21227Ca9Bb3590BB62ff60BA0EFbBf9Ba22ACC (MetaMask, Base network)
-- **Token:** USDC on Base
-- **Home server:** macOS Monterey x86_64 at 10.0.0.2 (nginx port 8888, MLX Whisper available)
-- **Email backend:** Resend (modern transactional email, generous free tier)
-- **Search backend:** TBD — research SerpAPI, Brave, Tavily during planning
-- **Package gotcha:** Use `x402-fetch` (non-scoped, v1.1.0), not `@x402/fetch` (placeholder stub)
-- **Strategic insight:** Screenshot and PDF are the strongest tools because they're boring universal utilities. Crypto sentiment is the weakest fit (niche). Build more like the first two.
+- **Stack:** TypeScript MCP server, Python/FastAPI backends, x402-fetch for payments
+- **API pattern:** FastAPI + fastapi-x402 on Railway (4 services) + home server (1 service)
+- **Wallet:** 0x6b21227Ca9Bb3590BB62ff60BA0EFbBf9Ba22ACC (MetaMask, Base network, USDC)
+- **Home server:** macOS Monterey x86_64 at 10.0.0.2, faster-whisper small/int8/CPU, Cloudflare Tunnel
+- **Email backend:** Resend with verified sender domain (jameswisdom.ink)
+- **Search backend:** Tavily ($0.008/query, AsyncTavilyClient)
+- **LOC:** ~3,200 across TypeScript + Python
+- **Package:** `x402-fetch` (non-scoped, v1.1.0), not `@x402/fetch` (placeholder stub)
 
 ## Constraints
 
 - **Security:** No private keys or secrets in published package — env var only
-- **Package boundary:** Explicit `files` field in package.json to control what ships
+- **Package boundary:** Explicit `files` field in package.json (5 files published)
 - **Input validation:** All user-facing params validated with Zod before any network call
-- **API pattern:** Same FastAPI + fastapi-x402 pattern for consistency (except transcription)
-- **Transcription hosting:** MLX Whisper on home server (10.0.0.2), not Railway — no GPU rental cost
+- **API pattern:** Same FastAPI + fastapi-x402 pattern for consistency
 - **Pricing cap:** All requests sub-$0.10 USDC — micropayment positioning
+- **SSRF:** All URL-accepting services validate resolved IPs against private/loopback ranges
 
 ## Key Decisions
 
@@ -86,11 +86,14 @@ AI agents can discover and pay for useful APIs with zero integration friction �
 | Astro + Starlight for brand site | Fast static output, great for content + docs | ✓ Good |
 | Self-host brand site | Control, no recurring costs | ✓ Good |
 | Port 8888 for nginx | AdGuard Home occupies port 80 | ✓ Good |
-| "AWS primitives for agents" positioning | Universal utilities > niche crypto tools | — Pending |
-| Resend for email sending | Modern, free tier, developer-friendly | — Pending |
-| MLX Whisper self-hosted for transcription | No GPU rental cost, hardware already available | — Pending |
-| Playwright + Cheerio for web scraping | Full control, no third-party dependency/cost | — Pending |
-| APIs + MCP only for v1.1 | Ship backend first, update site/docs in separate milestone | — Pending |
+| "AWS primitives for agents" positioning | Universal utilities > niche crypto tools | ✓ Good — v1.1 validates the pattern |
+| Resend for email sending | Modern, free tier, developer-friendly | ✓ Good — clean SDK, SPF/DKIM/DMARC verified |
+| faster-whisper self-hosted for transcription | No GPU rental cost, hardware already available | ✓ Good — small/int8 runs well on Intel CPU |
+| Playwright + trafilatura for web scraping | Full control, no third-party dependency/cost | ✓ Good — JS rendering + structured extraction |
+| Tavily for web search | Best API for agent use, synthesized answers | ✓ Good — $0.008/query, clean results |
+| APIs + MCP only for v1.1 | Ship backend first, update site/docs separately | ✓ Good — shipped in 4 days |
+| Cloudflare Tunnel for transcription | Zero router config, no exposed home IP | ✓ Good — works with launchd persistence |
+| npm passkey auth | iCloud Keychain + --auth-type=web for publish | ✓ Good — replaces TOTP hassle |
 
 ---
-*Last updated: 2026-03-12 after v1.1 milestone initialization*
+*Last updated: 2026-03-15 after v1.1 milestone completion*
