@@ -9,15 +9,15 @@ progress:
   completed_phases: 7
   total_plans: 18
   completed_plans: 18
-current_phase: 09-audio-transcription-api
-current_plan: "02"
+current_phase: 10-mcp-server-update
+current_plan: "01"
 ---
 
 # State: x402 API Network — v1.1
 
 **Milestone:** v1.1 — Universal Utility APIs
-**Last updated:** 2026-03-15
-**Overall status:** Phase 9 Plan 01 complete. x402-transcription-api service built — 3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied at code level. Next: Phase 9 Plan 02 (home server deployment: launchd plist, cloudflared tunnel, nginx).
+**Last updated:** 2026-03-15 (Phase 9 Plan 02)
+**Overall status:** Phase 9 complete. x402-transcription-api deployed on home server — transcribe.jameswisdom.ink live via launchd + Cloudflare Tunnel. All 6 TRANS requirements satisfied end-to-end. Next: Phase 10 (MCP Server Update + npm Publish).
 
 ## Phase Status
 
@@ -27,7 +27,7 @@ current_plan: "02"
 | 6 | File Conversion API | Complete (2/2 plans) |
 | 7 | Web Search API | Complete (2/2 plans) |
 | 8 | Email Sending API | Complete (2/2 plans) |
-| 9 | Audio Transcription API | In Progress (1/2 plans) |
+| 9 | Audio Transcription API | Complete (2/2 plans) |
 | 10 | MCP Server Update + npm Publish | Pending |
 
 ## Completed
@@ -46,6 +46,7 @@ current_plan: "02"
 - [x] Phase 8 Plan 01: x402-email-api service built — 4 files, 313-line main.py; EMAIL-01 through EMAIL-05 satisfied (2026-03-14)
 - [x] Phase 8 Plan 02: Railway deployed — https://x402-email-api-production.up.railway.app; all endpoints verified in production; x402_send_email tool wired into src/index.ts (2026-03-14)
 - [x] Phase 9 Plan 01: x402-transcription-api service built — 3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied (2026-03-15)
+- [x] Phase 9 Plan 02: x402-transcription-api deployed to home server — launchd plist + Cloudflare Tunnel; transcribe.jameswisdom.ink live (2026-03-15)
 
 ## Accumulated Decisions
 
@@ -74,7 +75,7 @@ current_plan: "02"
 | Question | Blocking | Notes |
 |----------|---------|-------|
 | ~~Verified sender domain for Resend~~ | ~~Phase 8~~ | Resolved — domain jameswisdom.ink configured, FROM_ADDRESS hardcoded |
-| Public URL for home server transcription | Phase 9 + 10 | Router port forwarding or Cloudflare Tunnel — confirm before publishing 1.1.0 |
+| ~~Public URL for home server transcription~~ | ~~Phase 9 + 10~~ | Resolved — transcribe.jameswisdom.ink live via Cloudflare Tunnel (2026-03-15) |
 | ~~Docker build validation for Playwright image~~ | ~~Phase 5~~ | Resolved — pinned playwright==1.44.0, deployed successfully |
 | ~~request.state.x402_payer attribute~~ | ~~Phase 5 Plan 02~~ | Resolved — wallet at decoded_payment["payload"]["authorization"]["from"] (Phase 7 Plan 01) |
 
@@ -98,4 +99,4 @@ See: `.planning/PROJECT.md` (updated 2026-03-12)
 ---
 
 *State initialized: 2026-03-12*
-*Last updated: 2026-03-15 — Phase 9 Plan 01 complete. x402-transcription-api built (3 files, 537-line main.py; TRANS-01 through TRANS-06 satisfied). Phase 9 Plan 02 (home server deployment) is next.*
+*Last updated: 2026-03-15 — Phase 9 Plan 02 complete. x402-transcription-api deployed to home server; transcribe.jameswisdom.ink live via launchd + Cloudflare Tunnel. Phase 10 (MCP Server Update + npm Publish) is next.*
