@@ -10,7 +10,7 @@ Requirements for v2.0 Bismuth Launch. Each maps to roadmap phases.
 ### Brand & Domain
 
 - [x] **BRAND-01**: Brand site content rewritten from "x402 API Network" to "Bismuth"
-- [ ] **BRAND-02**: Site deployed to `usebismuth.com` with HTTPS via Cloudflare Tunnel
+- [x] **BRAND-02**: Site deployed to `usebismuth.com` with HTTPS via Cloudflare Tunnel
 - [x] **BRAND-03**: "No API key — pay per call with USDC" messaging prominent on every reference page
 - [x] **BRAND-04**: Free test endpoint URL shown prominently above paid endpoint on each docs page
 
@@ -97,7 +97,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | BRAND-01 | Phase 11 | Complete |
-| BRAND-02 | Phase 11 | Pending |
+| BRAND-02 | Phase 11 | Complete |
 | BRAND-03 | Phase 11 | Complete |
 | BRAND-04 | Phase 11 | Complete |
 | DOCS-01 | Phase 12 | Pending |
