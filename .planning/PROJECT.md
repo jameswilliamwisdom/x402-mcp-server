@@ -1,8 +1,10 @@
-# x402 API Network
+# Bismuth (x402 API Network)
 
 ## What This Is
 
-Infrastructure for the AI agent economy using the x402 protocol. A unified MCP server (`x402-mcp-server@1.1.0` on npm) wrapping 8 pay-per-use utility APIs as 11 agent-callable tools with automatic USDC micropayment handling on Base. The strategic position is "AWS primitives for agents" — stateless, high-frequency, micropayment-optimized utilities that every agent workflow needs regardless of domain.
+Infrastructure for the AI agent economy using the x402 protocol, branded as **Bismuth**. A unified MCP server (`x402-mcp-server@1.1.0` on npm) wrapping 8 pay-per-use utility APIs as 11 agent-callable tools with automatic USDC micropayment handling on Base. The strategic position is "AWS primitives for agents" — stateless, high-frequency, micropayment-optimized utilities that every agent workflow needs regardless of domain.
+
+**Brand:** Bismuth — domain: `usebismuth.com` — npm package stays `x402-mcp-server` (x402 = protocol)
 
 ## Core Value
 
@@ -41,13 +43,15 @@ AI agents can discover and pay for useful APIs with zero integration friction �
 - ✓ MCP server updated to 11 tools, published as v1.1.0 — v1.1
 - ✓ Free test endpoints for all APIs — v1.1
 
-### Active — v2.0 Site Launch & Platform Polish
+### Active — v2.0 Bismuth Launch
 
-- Brand site docs updated for all v1.1 APIs (scraping, conversion, search, email, transcription)
-- Custom domain with SSL — brand site publicly accessible via HTTPS
-- Full site crawl — multi-page scraping capability for scraping API
-- Email attachments, CC/BCC — richer email sending
-- DOCX→PDF conversion — research lightweight alternatives to LibreOffice
+- Rebrand from "x402 API Network" to "Bismuth" — site content, domain, visual identity
+- Register and deploy to `usebismuth.com` with Cloudflare Tunnel + SSL
+- API docs for all v1.1 APIs (scraping, conversion, search, email, transcription)
+- Email CC/BCC + base64 attachments (25MB cap) via Resend SDK
+- DOCX→PDF conversion via mammoth + WeasyPrint (semantic fidelity)
+- Shallow site crawl — BFS with 15-page sync cap, path filters, SSRF on discovered URLs
+- MCP server update + npm publish v2.0.0
 
 ### Out of Scope
 

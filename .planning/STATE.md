@@ -1,7 +1,7 @@
 ---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: Site Launch & Platform Polish
+milestone_name: Bismuth Launch
 status: defining_requirements
 last_updated: "2026-03-15"
 progress:
@@ -13,7 +13,7 @@ progress:
 
 # State: x402 API Network
 
-**Milestone:** v2.0 — Site Launch & Platform Polish
+**Milestone:** v2.0 — Bismuth Launch
 **Last updated:** 2026-03-15
 **Overall status:** Defining requirements
 
