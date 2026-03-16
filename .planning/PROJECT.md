@@ -41,23 +41,23 @@ AI agents can discover and pay for useful APIs with zero integration friction �
 - ✓ MCP server updated to 11 tools, published as v1.1.0 — v1.1
 - ✓ Free test endpoints for all APIs — v1.1
 
-### Active
+### Active — v2.0 Site Launch & Platform Polish
 
-(None — next milestone not yet defined)
+- Brand site docs updated for all v1.1 APIs (scraping, conversion, search, email, transcription)
+- Custom domain with SSL — brand site publicly accessible via HTTPS
+- Full site crawl — multi-page scraping capability for scraping API
+- Email attachments, CC/BCC — richer email sending
+- DOCX→PDF conversion — research lightweight alternatives to LibreOffice
 
 ### Out of Scope
 
-- Brand site / docs updates for v1.1 APIs — future milestone
 - Developer platform / marketplace — future milestone
 - Third-party API hosting — future milestone
 - Own L2 chain — far future
 - Mobile app — not planned
 - User accounts / dashboard — not this project
-- DOCX→PDF conversion — LibreOffice adds 300MB to Docker image
 - Speaker diarization — requires separate model
 - Real-time streaming transcription — breaks stateless model
-- Full site crawl — multi-page scraping
-- Email attachments, CC/BCC — scope expansion
 
 ## Context
 
@@ -96,4 +96,4 @@ AI agents can discover and pay for useful APIs with zero integration friction �
 | npm passkey auth | iCloud Keychain + --auth-type=web for publish | ✓ Good — replaces TOTP hassle |
 
 ---
-*Last updated: 2026-03-15 after v1.1 milestone completion*
+*Last updated: 2026-03-15 — v2.0 milestone started*
