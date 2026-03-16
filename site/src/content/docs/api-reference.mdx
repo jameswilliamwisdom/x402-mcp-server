@@ -1,19 +1,23 @@
 ---
 title: API Reference
-description: Complete reference for all 6 x402 MCP tools — parameters, returns, pricing, and examples.
+description: Complete reference for all 11 Bismuth MCP tools — parameters, returns, pricing, and examples.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
 {/* SYNC: prices must match src/index.ts and site/src/components/pricing/PricingTable.astro */}
 
-x402 exposes 6 MCP tools. All tools work in free test mode without a wallet. Paid mode unlocks full capabilities with real data for any supported input.
+Bismuth exposes 11 MCP tools. No API key required — every call is a USDC micropayment on Base. All tools include a free test endpoint to try without a wallet.
+
+<Aside type="tip" title="No API key required">
+Bismuth uses the x402 micropayment protocol — no account, no API key, no subscription. Add `X402_PRIVATE_KEY` (a Base wallet private key) and every tool call automatically pays the listed USDC price. Start for free with the test endpoint on each tool below.
+</Aside>
 
 ---
 
 ## x402_network_info
 
-List all APIs in the x402 network with pricing, status, and capabilities.
+List all APIs in the Bismuth network with pricing, status, and capabilities.
 
 **Cost:** Free — no payment required.
 
@@ -23,7 +27,7 @@ List all APIs in the x402 network with pricing, status, and capabilities.
 
 **Example:**
 
-> "What APIs are available on the x402 network?"
+> "What APIs are available on Bismuth?"
 
 ```json
 {
@@ -37,7 +41,8 @@ List all APIs in the x402 network with pricing, status, and capabilities.
 
 Capture a screenshot of any URL and return it as a base64-encoded image.
 
-**Cost:** $0.01 USDC on Base | Free in test mode (limited to example.com, example.org, httpbin.org)
+**Free test endpoint:** `GET /screenshot/test` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /screenshot` — $0.01 USDC on Base per call.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
@@ -48,6 +53,10 @@ Capture a screenshot of any URL and return it as a base64-encoded image.
 | `format` | string | No | `"png"` | Image format: `png`, `jpeg`, or `webp` |
 
 **Returns:** Base64-encoded image data in the specified format.
+
+<Aside type="tip">
+No API key required. Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.01 USDC on Base.
+</Aside>
 
 <Aside type="note">
 Free test mode is limited to `example.com`, `example.org`, and `httpbin.org`. Set `X402_PRIVATE_KEY` to capture any URL.
@@ -74,13 +83,18 @@ Free test mode is limited to `example.com`, `example.org`, and `httpbin.org`. Se
 
 Extract text content from a PDF document via URL.
 
-**Cost:** $0.01 USDC on Base | Free in test mode
+**Free test endpoint:** `GET /pdf/test` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /pdf` — $0.01 USDC on Base per call.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `pdf_url` | string | Yes | — | Full URL of the PDF to extract text from |
 
 **Returns:** Extracted text content, page count, and document metadata.
+
+<Aside type="tip">
+No API key required. Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.01 USDC on Base.
+</Aside>
 
 **Example:**
 
@@ -101,13 +115,18 @@ Extract text content from a PDF document via URL.
 
 Get real-time crypto sentiment analysis for a specific coin.
 
-**Cost:** $0.01 USDC on Base | Free in test mode
+**Free test endpoint:** `GET /sentiment/test` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /sentiment` — $0.01 USDC on Base per call.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `coin` | string | Yes | — | Cryptocurrency ticker symbol (e.g., `BTC`, `ETH`, `SOL`) — 1–10 alphanumeric characters |
 
 **Returns:** Sentiment score (−1 to 1), confidence level, data sources, and analysis summary.
+
+<Aside type="tip">
+No API key required. Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.01 USDC on Base.
+</Aside>
 
 **Example:**
 
@@ -128,11 +147,16 @@ Get real-time crypto sentiment analysis for a specific coin.
 
 Get a broad crypto market sentiment overview covering major coins and trends.
 
-**Cost:** $0.05 USDC on Base | Free in test mode
+**Free test endpoint:** `GET /market/test` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /market` — $0.05 USDC on Base per call.
 
 *No parameters.*
 
 **Returns:** Market-wide sentiment data, top movers, and aggregate trend analysis across the crypto market.
+
+<Aside type="tip">
+No API key required. Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.05 USDC on Base.
+</Aside>
 
 **Example:**
 
@@ -150,13 +174,18 @@ Get a broad crypto market sentiment overview covering major coins and trends.
 
 Get comprehensive multi-source intelligence analysis for a cryptocurrency.
 
-**Cost:** $0.10 USDC on Base | Free in test mode
+**Free test endpoint:** `GET /intelligence/test` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /intelligence` — $0.10 USDC on Base per call.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `coin` | string | Yes | — | Cryptocurrency ticker symbol (e.g., `BTC`, `ETH`, `SOL`) — 1–10 alphanumeric characters |
 
 **Returns:** Comprehensive analysis synthesized from multiple data sources: CoinGecko (market data), DeFiLlama (TVL and DeFi metrics), CryptoPanic (news), Fear & Greed Index (market psychology), and GitHub (development activity). Includes AI-generated actionable insights.
+
+<Aside type="tip">
+No API key required. Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.10 USDC on Base.
+</Aside>
 
 <Aside type="tip">
 This is the premium tier. Use `x402_sentiment` ($0.01) for quick sentiment checks. Use `x402_intelligence` when you need the full picture — market, news, DeFi, and development activity in one response.
@@ -187,7 +216,14 @@ This is the premium tier. Use `x402_sentiment` ($0.01) for quick sentiment check
 | `x402_sentiment` | $0.01 USDC | Yes |
 | `x402_market_overview` | $0.05 USDC | Yes |
 | `x402_intelligence` | $0.10 USDC | Yes |
+| `x402_scrape_url` | $0.02 USDC | Yes |
+| `x402_convert_file` | $0.05 USDC | Yes |
+| `x402_web_search` | $0.02 USDC | Yes |
+| `x402_send_email` | $0.02 USDC | Yes |
+| `x402_transcribe_audio` | $0.05 USDC | Yes |
+
+Full reference for scrape, convert, search, email, and transcription APIs coming in the next update.
 
 Payments are settled on Base (L2 Ethereum) in USDC. The x402 protocol handles payment negotiation transparently — your agent makes the request, the payment is authorized, and the data comes back in a single interaction.
 
-See [Getting Started](/getting-started/) to configure your wallet and make your first paid call.
+No API key needed. See [Getting Started](/getting-started/) to install and make your first free test call. Add a wallet when you're ready to go paid.
