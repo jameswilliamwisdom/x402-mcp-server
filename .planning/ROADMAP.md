@@ -40,7 +40,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
 **Milestone Goal:** Rebrand to Bismuth, go public on usebismuth.com with HTTPS, ship complete API reference docs, extend three backend APIs (email attachments/CC/BCC, DOCX-to-PDF, shallow site crawl), and publish x402-mcp-server@2.0.0.
 
-- [ ] **Phase 11: Rebrand + Domain + SSL** - Rename brand to Bismuth, register usebismuth.com, deploy site publicly with Cloudflare Tunnel HTTPS
+- [ ] **Phase 11: Rebrand + Domain + SSL** - Rename brand to Bismuth, register usebismuth.com, deploy site publicly with Cloudflare Tunnel HTTPS (2/2 plans created)
 - [ ] **Phase 12: API Documentation** - Write 5 reference pages for all v1.1 APIs in Starlight with parameters, examples, and error codes
 - [ ] **Phase 13: Email Attachments + CC/BCC** - Extend email API to accept CC, BCC, and base64 file attachments with size validation
 - [ ] **Phase 14: DOCX-to-PDF Conversion** - Add DOCX input type to conversion API via mammoth + WeasyPrint pipeline
@@ -58,7 +58,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
   2. All site content refers to "Bismuth" — no remaining "x402 API Network" copy
   3. Every page shows a "No API key — pay per call with USDC" message in a prominent position
   4. The site is reachable from the public internet, not just the local network
-**Plans**: TBD
+**Plans**: 11-01 (site rebrand — autonomous), 11-02 (domain + tunnel + deploy — requires human action)
 
 ### Phase 12: API Documentation
 **Goal**: Every v1.1 API has a complete reference page with parameters, code examples, and free test endpoint link
@@ -133,7 +133,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 8. Email Sending API | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 9. Audio Transcription API | v1.1 | 2/2 | Complete | 2026-03-15 |
 | 10. MCP Server Update + npm Publish | v1.1 | 2/2 | Complete | 2026-03-15 |
-| 11. Rebrand + Domain + SSL | v2.0 | 0/TBD | Not started | - |
+| 11. Rebrand + Domain + SSL | 1/2 | In Progress|  | - |
 | 12. API Documentation | v2.0 | 0/TBD | Not started | - |
 | 13. Email Attachments + CC/BCC | v2.0 | 0/TBD | Not started | - |
 | 14. DOCX-to-PDF Conversion | v2.0 | 0/TBD | Not started | - |
