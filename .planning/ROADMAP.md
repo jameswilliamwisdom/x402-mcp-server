@@ -133,7 +133,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 8. Email Sending API | v1.1 | 2/2 | Complete | 2026-03-14 |
 | 9. Audio Transcription API | v1.1 | 2/2 | Complete | 2026-03-15 |
 | 10. MCP Server Update + npm Publish | v1.1 | 2/2 | Complete | 2026-03-15 |
-| 11. Rebrand + Domain + SSL | 2/2 | Complete   | 2026-03-16 | - |
+| 11. Rebrand + Domain + SSL | 2/2 | Complete    | 2026-03-16 | - |
 | 12. API Documentation | v2.0 | 0/TBD | Not started | - |
 | 13. Email Attachments + CC/BCC | v2.0 | 0/TBD | Not started | - |
 | 14. DOCX-to-PDF Conversion | v2.0 | 0/TBD | Not started | - |
