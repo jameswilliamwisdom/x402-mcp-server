@@ -96,41 +96,41 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BRAND-01 | — | Pending |
-| BRAND-02 | — | Pending |
-| BRAND-03 | — | Pending |
-| BRAND-04 | — | Pending |
-| DOCS-01 | — | Pending |
-| DOCS-02 | — | Pending |
-| DOCS-03 | — | Pending |
-| DOCS-04 | — | Pending |
-| DOCS-05 | — | Pending |
-| EMAIL-01 | — | Pending |
-| EMAIL-02 | — | Pending |
-| EMAIL-03 | — | Pending |
-| EMAIL-04 | — | Pending |
-| CONV-01 | — | Pending |
-| CONV-02 | — | Pending |
-| CONV-03 | — | Pending |
-| CRAWL-01 | — | Pending |
-| CRAWL-02 | — | Pending |
-| CRAWL-03 | — | Pending |
-| CRAWL-04 | — | Pending |
-| CRAWL-05 | — | Pending |
-| CRAWL-06 | — | Pending |
-| CRAWL-07 | — | Pending |
-| CRAWL-08 | — | Pending |
-| MCP-01 | — | Pending |
-| MCP-02 | — | Pending |
-| MCP-03 | — | Pending |
-| MCP-04 | — | Pending |
-| MCP-05 | — | Pending |
+| BRAND-01 | Phase 11 | Pending |
+| BRAND-02 | Phase 11 | Pending |
+| BRAND-03 | Phase 11 | Pending |
+| BRAND-04 | Phase 11 | Pending |
+| DOCS-01 | Phase 12 | Pending |
+| DOCS-02 | Phase 12 | Pending |
+| DOCS-03 | Phase 12 | Pending |
+| DOCS-04 | Phase 12 | Pending |
+| DOCS-05 | Phase 12 | Pending |
+| EMAIL-01 | Phase 13 | Pending |
+| EMAIL-02 | Phase 13 | Pending |
+| EMAIL-03 | Phase 13 | Pending |
+| EMAIL-04 | Phase 13 | Pending |
+| CONV-01 | Phase 14 | Pending |
+| CONV-02 | Phase 14 | Pending |
+| CONV-03 | Phase 14 | Pending |
+| CRAWL-01 | Phase 15 | Pending |
+| CRAWL-02 | Phase 15 | Pending |
+| CRAWL-03 | Phase 15 | Pending |
+| CRAWL-04 | Phase 15 | Pending |
+| CRAWL-05 | Phase 15 | Pending |
+| CRAWL-06 | Phase 15 | Pending |
+| CRAWL-07 | Phase 15 | Pending |
+| CRAWL-08 | Phase 15 | Pending |
+| MCP-01 | Phase 16 | Pending |
+| MCP-02 | Phase 16 | Pending |
+| MCP-03 | Phase 16 | Pending |
+| MCP-04 | Phase 16 | Pending |
+| MCP-05 | Phase 16 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 29 total
-- Mapped to phases: 0
-- Unmapped: 29 (pending roadmap creation)
+- Mapped to phases: 29
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after initial definition*
+*Last updated: 2026-03-16 — traceability complete, all 29 requirements mapped to phases 11-16*
