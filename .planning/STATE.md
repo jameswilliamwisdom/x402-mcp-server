@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Bismuth Launch
 status: unknown
-last_updated: "2026-03-16T07:29:40.269Z"
+last_updated: "2026-03-16T13:22:49.469Z"
 progress:
   total_phases: 11
   completed_phases: 11
@@ -15,14 +15,14 @@ progress:
 
 **Milestone:** v2.0 — Bismuth Launch
 **Last updated:** 2026-03-16
-**Overall status:** Phase 11 complete — Bismuth live at https://usebismuth.com (pending: human nginx reload + Task 4 browser verify)
+**Overall status:** Phase 11 complete — Bismuth live at https://usebismuth.com. Task 4 browser verification confirmed ("An outstanding V2"). Phase 12 ready to begin.
 
 ## Current Position
 
 Phase: 11 of 16 (Rebrand + Domain + SSL) — COMPLETE
-Plan: 11-02 complete (Tasks 2+3 executed; Task 4 human-verify checkpoint pending)
-Status: 11-02 auto tasks done 2026-03-16; awaiting human browser verification
-Last activity: 2026-03-16 — 11-02 cloudflared + deploy.sh + redeploy to usebismuth.com (2 tasks, 3 files, 44min)
+Plan: 11-02 complete (all 4 tasks done; Task 4 browser verification confirmed 2026-03-16)
+Status: Phase 11 fully complete — advancing to Phase 12
+Last activity: 2026-03-16 — 11-02 fully complete: usebismuth.com live with padlock, Bismuth branding verified by user
 
 Progress: [██████████] 100% (2/2 plans in Phase 11 complete)
 
@@ -31,7 +31,7 @@ Progress: [██████████] 100% (2/2 plans in Phase 11 complete)
 See: `.planning/PROJECT.md` (updated 2026-03-15)
 
 **Core value:** AI agents can discover and pay for useful APIs with zero integration friction
-**Current focus:** Phase 11 — Rebrand to Bismuth, register usebismuth.com, Cloudflare Tunnel HTTPS
+**Current focus:** Phase 12 — API Documentation (5 reference pages for all v1.1 APIs)
 
 ## Accumulated Context
 
@@ -48,6 +48,7 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 - [Phase 11]: pricing.astro fixed as auto-fix deviation — stray x402 Network and x402.todo references cleaned up even though file was not in plan file list
 - [Phase 11]: cloudflared runs on home server (10.0.0.2) — ingress rule uses localhost:8888 (nginx), not 10.0.0.72:8888 (Mac)
 - [Phase 11]: nginx absolute_redirect off + try_files fix on disk at home server, requires sudo nginx -s reload to activate
+- [Phase 11-rebrand-domain-ssl]: Bismuth site verified publicly at https://usebismuth.com — padlock present, no SSL warnings, Bismuth branding confirmed by user on 2026-03-16
 
 ### Pending Todos
 
@@ -63,5 +64,5 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: 11-02 Task 4 human-verify checkpoint — usebismuth.com live, awaiting browser verification
+Stopped at: Phase 11 complete — 11-02 all tasks done, browser verification confirmed. Ready for Phase 12 (API Documentation).
 Resume file: None
