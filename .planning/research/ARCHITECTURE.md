@@ -1,12 +1,12 @@
 # Architecture Research
 
-**Domain:** v1.1 Universal Utility APIs — 5 new backends integrating with existing x402 MCP server
-**Researched:** 2026-03-12
-**Confidence:** HIGH
+**Domain:** x402 API Network v2.0 — Site Launch & Platform Polish
+**Researched:** 2026-03-15
+**Confidence:** HIGH (all key integration points verified against live source code and official docs)
 
 ## Standard Architecture
 
-### System Overview
+### System Overview (v2.0 additions highlighted)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -18,47 +18,56 @@
 │                        x402 MCP Server (src/index.ts)                        │
 │                 TypeScript, @modelcontextprotocol/sdk, x402-fetch             │
 │                                                                               │
-│  EXISTING TOOLS (v1.0)            NEW TOOLS (v1.1)                           │
-│  ─────────────────────────        ──────────────────────────────────────     │
-│  x402_network_info (free)         x402_scrape (free+paid)                   │
-│  x402_screenshot (free+paid)      x402_email_send (paid only)               │
-│  x402_pdf_extract (free+paid)     x402_search (free+paid)                   │
-│  x402_sentiment (free+paid)       x402_convert_file (free+paid)             │
-│  x402_market_overview (free+paid) x402_transcribe (free+paid)               │
-│  x402_intelligence (free+paid)                                               │
-└──────────┬──────────────────────────────────────────────────────────────────┘
-           │ HTTP via x402-fetch (handles 402 → USDC payment automatically)
-           │
-     ┌─────┴──────────────────────────────────────────────────────────────┐
-     │                     API Layer (two hosting patterns)                │
-     │                                                                     │
-     │  ── Railway (existing) ──────────────────────────────────────────  │
-     │  Screenshot API    PDF API    Sentiment API                         │
-     │  FastAPI + fastapi-x402 + payment enforcement                       │
-     │                                                                     │
-     │  ── Railway (new) ──────────────────────────────────────────────── │
-     │  Scraping API      Email API   Search API   File Conversion API     │
-     │  FastAPI + fastapi-x402 (same proven pattern)                       │
-     │                                                                     │
-     │  ── Home Server (new, self-hosted) ──────────────────────────────  │
-     │  Transcription API (10.0.0.2)                                       │
-     │  FastAPI + custom x402 middleware (not fastapi-x402 library)        │
-     │  nginx reverse proxy → uvicorn process, port 8889                  │
-     │  MLX Whisper (macOS x86_64, runs natively)                         │
-     └─────────────────────────────────────────────────────────────────────┘
+│  EXISTING TOOLS (v1.1)            MODIFIED TOOLS (v2.0)                      │
+│  ─────────────────────────        ─────────────────────────────────────      │
+│  x402_network_info (free)         x402_scrape_url  → +crawl param            │
+│  x402_screenshot (free+paid)      x402_send_email  → +cc/bcc/attachments     │
+│  x402_pdf_extract (free+paid)     x402_convert_file → +docx type             │
+│  x402_sentiment / market /                                                   │
+│    intelligence (free+paid)                                                  │
+│  x402_web_search (free+paid)                                                 │
+│  x402_transcribe_audio (free+paid)                                           │
+└──────────────┬──────────────────────────────────────────────────────────────┘
+               │ HTTP via x402-fetch
+               │
+     ┌─────────┴───────────────────────────────────────────────────────────────┐
+     │                     API Layer (existing Railway + home server)           │
+     │                                                                          │
+     │  Railway ──────────────────────────────────────────────────────────     │
+     │  Scraping API   → add POST /crawl endpoint (new)                        │
+     │  Conversion API → add "docx" type to discriminated union (modified)     │
+     │  Email API      → add cc/bcc/attachments to EmailRequest (modified)     │
+     │  Search API     → unchanged for v2.0                                    │
+     │                                                                          │
+     │  Home Server ──────────────────────────────────────────────────────     │
+     │  Transcription API (transcribe.jameswisdom.ink) → unchanged v2.0       │
+     │  Brand Site (nginx :8888) → domain + SSL added (see below)             │
+     └──────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Brand Site (v2.0: PUBLIC via HTTPS)                   │
+│                                                                               │
+│  BEFORE v2.0:                      AFTER v2.0:                               │
+│  Astro + Starlight static site     Same static build                        │
+│  nginx on port 8888                nginx on port 8888 (unchanged)           │
+│  HTTP only                         Cloudflare Tunnel → HTTPS + custom domain│
+│  Local network only (10.0.0.2)     Public internet accessible               │
+│  site: 'https://x402.todo'         site: 'https://x402.jameswisdom.ink'     │
+│                                    (or chosen subdomain)                     │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Component Responsibilities
 
-| Component | Responsibility | Implementation |
-|-----------|----------------|----------------|
-| `src/index.ts` | MCP server — registers all tools, routes free vs paid calls | Modified — add 5 new tool registrations, expand APIS dict |
-| Railway Scraping API | URL → structured JSON (text, links, tables, metadata) | New Railway service — Python/FastAPI + Playwright headless + Cheerio-equivalent (BeautifulSoup) |
-| Railway Email API | Stateless transactional email send via Resend | New Railway service — Python/FastAPI + Resend SDK + fastapi-x402 |
-| Railway Search API | Query → top N results as structured JSON | New Railway service — Python/FastAPI + search backend (TBD) + fastapi-x402 |
-| Railway File Conversion API | Format-to-format: doc-to-pdf, image resize, html-to-pdf, csv-to-json | New Railway service — Python/FastAPI + conversion libs + fastapi-x402 |
-| Home Server Transcription API | Audio URL → text transcript via MLX Whisper | New home-hosted service — Python/FastAPI + MLX Whisper + custom x402 middleware, nginx port 8889 |
-| nginx (home server) | Reverse proxy for both brand site (8888) and transcription API (8889) | Existing nginx — add new server block for transcription |
+| Component | Responsibility | v2.0 Change |
+|-----------|----------------|-------------|
+| `src/index.ts` | MCP server — 11 tools, routes free/paid | Modify `x402_scrape_url`, `x402_send_email`, `x402_convert_file` tool handlers for new params |
+| Scraping API (`x402-scraping-api/main.py`) | URL → structured JSON via Playwright | Add `POST /crawl` endpoint, new `CrawlRequest` model |
+| Email API (`x402-email-api/main.py`) | Transactional email via Resend | Add `cc`, `bcc`, `attachments` to `EmailRequest` model and `build_send_params()` |
+| Conversion API (`x402-conversion-api/main.py`) | File format conversion | Add `DocxConvertRequest` to `ConvertRequest` union, add `sync_docx_to_pdf()` function |
+| Brand site (`site/`) | Marketing + docs | Update `astro.config.mjs` SITE_URL, add 5 new API docs pages, sidebar entries |
+| nginx (`/usr/local/etc/nginx/` on macOS) | Reverse proxy for site + transcription | Add SSL config or rely entirely on Cloudflare Tunnel (see below) |
+| Cloudflare Tunnel | Public HTTPS exposure of brand site | New — `cloudflared` config routes custom domain to `http://localhost:8888` |
 
 ---
 
@@ -66,149 +75,124 @@
 
 ### Modified (existing files change)
 
-| File | What Changes | Why |
-|------|-------------|-----|
-| `src/index.ts` | Add 5 new entries to `APIS` dict, add ~5 new `server.tool()` blocks | New tools must be registered with the MCP server |
-| `package.json` | Bump version to `1.1.0`, expand `keywords` | SemVer for new tools, discoverability |
+| File | What Changes | Notes |
+|------|-------------|-------|
+| `x402-scraping-api/main.py` | Add `CrawlRequest` model, `POST /crawl` route, `crawl_site()` function | Same Playwright browser, new endpoint |
+| `x402-email-api/main.py` | Add `cc`, `bcc`, `attachments` to `EmailRequest`, update `build_send_params()` | Resend SDK already supports these — purely additive |
+| `x402-conversion-api/main.py` | Add `DocxConvertRequest` to union, add `sync_docx_to_pdf()`, update `requirements.txt` | `mammoth` + `weasyprint` (already installed) chain |
+| `x402-conversion-api/requirements.txt` | Add `mammoth>=1.8.0` | `weasyprint` already present |
+| `x402-conversion-api/Dockerfile` | Add mammoth install — no new system deps needed | mammoth is pure Python |
+| `src/index.ts` | Add `crawl_url` param to `x402_scrape_url`, add `cc/bcc/attachments` to `x402_send_email`, add `docx` to `x402_convert_file` type enum | Zod schemas updated |
+| `site/astro.config.mjs` | Set `SITE_URL` env var at build time to real public domain | Build script change |
+| `site/src/content/docs/api-reference.mdx` | Add all v1.1 tools (scraping, conversion, search, email, transcription) | Currently only 6 tools documented |
+| Cloudflare Tunnel config | New `~/.cloudflared/config.yml` routing domain → `http://localhost:8888` | No nginx changes required |
 
-### New (net new files/services)
+### New (net new files)
 
 | Component | Location | What It Is |
 |-----------|----------|------------|
-| Scraping API | New Railway service repo (or `~/projects/x402-scraping-api/`) | Python FastAPI service |
-| Email API | New Railway service repo | Python FastAPI service |
-| Search API | New Railway service repo | Python FastAPI service |
-| File Conversion API | New Railway service repo | Python FastAPI service |
-| Transcription API | `~/projects/x402-transcription-api/` | Python FastAPI service, home-hosted |
-| nginx block | `/etc/nginx/sites-available/` on 10.0.0.2 | New `server` block for transcription at port 8889 |
-
----
-
-## Recommended Project Structure
-
-### MCP Server (modified `src/index.ts`)
-
-```
-src/
-└── index.ts          # Add new APIS entries + 5 new server.tool() blocks
-                      # All tools stay in one file through ~16 tools (acceptable)
-```
-
-When the file exceeds ~600 lines or ~10 APIs, extract to:
-
-```
-src/
-├── index.ts          # thin entry — server setup + connect transport
-├── tools/
-│   ├── screenshot.ts
-│   ├── pdf.ts
-│   ├── sentiment.ts
-│   ├── scrape.ts
-│   ├── email.ts
-│   ├── search.ts
-│   ├── convert.ts
-│   └── transcribe.ts
-└── lib/
-    ├── fetch.ts      # getPaidFetch(), apiGet(), apiPost()
-    └── helpers.ts    # textResult(), errorResult(), checkHealth()
-```
-
-Do NOT refactor to modules as part of v1.1 — the file structure change is a separate concern. Get the new tools working first.
-
-### Railway API Services (new)
-
-Each Railway API follows the same file layout:
-
-```
-x402-<name>-api/
-├── main.py           # FastAPI app, routes, x402 payment enforcement
-├── requirements.txt  # fastapi, uvicorn, fastapi-x402, service-specific deps
-├── Procfile          # web: uvicorn main:app --host 0.0.0.0 --port $PORT
-└── railway.toml      # Railway config (optional, can use env vars)
-```
-
-### Home Server Transcription API (new, distinct layout)
-
-```
-~/projects/x402-transcription-api/
-├── main.py           # FastAPI app, MLX Whisper call, custom x402 middleware
-├── x402_middleware.py  # Hand-rolled x402 payment verification (no fastapi-x402)
-├── requirements.txt  # fastapi, uvicorn, mlx-whisper, requests
-├── start.sh          # uvicorn main:app --host 127.0.0.1 --port 8889
-└── launchd/
-    └── com.x402.transcription.plist  # macOS launchd service definition
-```
+| Crawl fixture | `x402-scraping-api/fixture_crawl.json` | Free test fixture for `GET /crawl/test` |
+| Cloudflare Tunnel config | `~/.cloudflared/config.yml` | Routes public hostname to local nginx |
+| Cloudflare launchd plist | `~/Library/LaunchAgents/com.cloudflare.cloudflared.plist` | Keeps tunnel alive (or managed by `cloudflared service install`) |
+| New docs pages | `site/src/content/docs/api-scraping.mdx`, `api-email.mdx`, `api-conversion.mdx`, `api-search.mdx`, `api-transcription.mdx` | Separate pages per API or extended api-reference.mdx |
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Railway Service — fastapi-x402 (proven pattern, replicate 4x)
+### Pattern 1: Crawl Feature — New Endpoint on Existing Scraping Service
 
-**What:** A FastAPI app with fastapi-x402 middleware applied to paid endpoints. Free test endpoints bypass middleware. Railway handles deployment, scaling, and SSL.
+**What:** Add `POST /crawl` as a new endpoint to the existing `x402-scraping-api` service. It accepts a seed URL, max depth, and max pages, then BFS-crawls the site and returns an array of scrape results. The existing Playwright browser singleton and `scrape_page()` / `extract_content()` functions are reused.
 
-**When to use:** All four new Railway services (scraping, email, search, file conversion).
+**Why new endpoint, not parameter:** The crawl operation returns a different response schema (`results: [ScrapeResult]` array vs single result), has different limits, and warrants a different price point ($0.05+ vs $0.02). A separate endpoint is cleaner than overloading `/scrape` with a boolean flag that changes the return type.
 
-**Trade-offs:** No custom infrastructure work. Cold starts on Railway Hobby tier (first request after idle may take 2–5s). Payment verification is handled by the library — no crypto code to write. Each service is fully independent: separate deploy, separate URL, separate Railway project.
+**Trade-offs:**
+- Pro: reuses existing Playwright browser singleton — no new browser lifecycle management
+- Pro: SSRF validation already in `validate_url_for_ssrf()` — call it on each discovered URL before queuing
+- Con: Crawl is inherently slow (N pages * ~2s each). Railway timeout limit is a concern — set max_pages default conservatively (10–15 pages)
+- Con: Each page costs Railway compute. Price must reflect N-page cost, not just 1-page cost.
 
-**Example (scraping API skeleton):**
+**Crawl implementation pattern:**
 
 ```python
-from fastapi import FastAPI, Request
-from fastapi_x402 import X402Middleware
+from collections import deque
+from urllib.parse import urljoin, urlparse
 
-app = FastAPI()
+class CrawlRequest(BaseModel):
+    url: BoundedHttpUrl = Field(..., description="Seed URL to start crawl from")
+    max_pages: int = Field(10, ge=1, le=30,
+                           description="Max pages to crawl (default 10, max 30)")
+    max_depth: int = Field(2, ge=1, le=3,
+                           description="Max link-follow depth from seed (default 2, max 3)")
+    same_domain_only: bool = Field(True,
+                                   description="Only follow links on same domain (default true)")
 
-# Paid endpoint — x402 middleware enforces payment
-app.add_middleware(
-    X402Middleware,
-    payment_required_paths=["/scrape"],
-    price_usd=0.01,
-    wallet_address="0x6b21227Ca9Bb3590BB62ff60BA0EFbBf9Ba22ACC",
-    network="base",
-)
+@app.post("/crawl")
+@pay("$0.05")  # Higher price — N page loads
+async def crawl(request: Request, body: CrawlRequest):
+    seed = str(body.url)
+    seed_domain = urlparse(seed).netloc
 
-@app.get("/test/scrape")
-async def test_scrape(url: str):
-    # Free — hardcoded to example.com, httpbin.org, example.org
-    ...
+    queue = deque([(seed, 0)])  # (url, depth)
+    visited = set()
+    results = []
 
-@app.get("/scrape")
-async def scrape(url: str):
-    # Paid — x402 middleware handles 402 → payment before this runs
-    ...
+    while queue and len(visited) < body.max_pages:
+        url, depth = queue.popleft()
+        if url in visited:
+            continue
+        try:
+            validate_url_for_ssrf(url)  # SSRF check on every discovered URL
+        except ValueError:
+            continue
+        visited.add(url)
+
+        page_result = await scrape_page(url, wait_for=None)
+        extracted = extract_content(page_result["html"], url)
+        results.append({"url": url, "depth": depth, **extracted})
+
+        # Enqueue links if not at max depth
+        if depth < body.max_depth:
+            for link in extracted.get("links", []):
+                href = link["url"]
+                if body.same_domain_only and urlparse(href).netloc != seed_domain:
+                    continue
+                if href not in visited:
+                    queue.append((href, depth + 1))
+
+    return {"success": True, "seed": seed, "pages_crawled": len(results), "results": results}
 ```
 
-**MCP tool pattern (mirroring existing tools):**
+**MCP server changes for crawl** — modify `x402_scrape_url` or add new `x402_crawl_site` tool. New tool is cleaner:
 
 ```typescript
-const APIS = {
-  // ... existing ...
-  scrape: {
-    name: "Web Scraping API",
-    baseUrl: "https://x402-scraping-api-production.up.railway.app",
-    price: "$0.01",
-    description: "Scrape URLs and extract structured content",
-    usesX402: true,
-  },
-  // ...
-} as const;
-
 server.tool(
-  "x402_scrape",
-  `Scrape a URL and return structured content...
-Price: $0.01 USDC per scrape.`,
+  "x402_crawl_site",
+  `Crawl a website starting from a seed URL and return structured content for all discovered pages.
+Price: $0.05 USDC per crawl (up to 10 pages) | Free test: returns fixture data.
+
+Follows links breadth-first within the same domain. Returns array of scrape results.
+Without X402_PRIVATE_KEY, only the free test endpoint is available.`,
   {
-    url: z.string().url().describe("URL to scrape"),
-    extract: z.enum(["text", "links", "tables", "full"]).default("full"),
+    url: z.string().url().describe("Seed URL to start crawl from"),
+    max_pages: z.number().int().min(1).max(30).default(10)
+      .describe("Max pages to crawl (default: 10, max: 30)"),
+    max_depth: z.number().int().min(1).max(3).default(2)
+      .describe("Max link-follow depth from seed (default: 2)"),
+    same_domain_only: z.boolean().default(true)
+      .describe("Only follow links within the same domain (default: true)"),
   },
   async (params) => {
-    const base = APIS.scrape.baseUrl;
+    const base = APIS.scraping.baseUrl;
     try {
       const usePaid = !!PRIVATE_KEY;
-      const endpoint = usePaid ? "/scrape" : "/test/scrape";
-      const data = await apiGet(base, `${endpoint}?url=${encodeURIComponent(params.url)}&extract=${params.extract}`, usePaid);
-      return textResult({ mode: usePaid ? "paid" : "free_test", cost: usePaid ? "$0.01" : "free", ...data });
+      if (usePaid) {
+        const data = await apiPost(base, "/crawl", { ...params }, true);
+        return textResult({ mode: "paid", cost: "$0.05", ...data });
+      } else {
+        const data = await apiGet(base, "/crawl/test");
+        return textResult({ mode: "free_test", ...data });
+      }
     } catch (err: any) {
       return errorResult(err.message);
     }
@@ -216,263 +200,322 @@ Price: $0.01 USDC per scrape.`,
 );
 ```
 
-### Pattern 2: Self-Hosted Transcription — Custom x402 Middleware
+**Decision:** New `x402_crawl_site` tool (12th tool) — don't add a `crawl` parameter to the existing `x402_scrape_url`. Different schema, different price, different use case.
 
-**What:** A FastAPI app on the home Mac server where x402 payment verification is implemented manually (not via fastapi-x402 library, which assumes a Railway-compatible environment and may have OS-specific deps). nginx reverse-proxies the local uvicorn process. A macOS launchd plist keeps the process alive across reboots.
+---
 
-**When to use:** Transcription service only — any service where Railway costs are prohibitive due to compute intensity (GPU/model inference) and local hardware already has the required capability (MLX Whisper runs natively on Apple Silicon or x86_64 macOS).
+### Pattern 2: Email Attachments + CC/BCC — Extend Existing Endpoint
 
-**Trade-offs vs Railway pattern:**
+**What:** Add `cc`, `bcc`, and `attachments` fields to the existing `EmailRequest` Pydantic model and `POST /send` endpoint. The Resend SDK already supports all three — this is a purely additive model change, not a new endpoint.
 
-| Concern | Railway Pattern | Home Server Pattern |
-|---------|-----------------|---------------------|
-| x402 middleware | `fastapi-x402` library handles it | Must implement `X-Payment` header verification manually |
-| SSL/TLS | Railway provides HTTPS automatically | nginx + local cert (or Cloudflare tunnel if public access needed) |
-| Uptime | Railway manages process lifecycle | macOS launchd plist required; home server power/network dependency |
-| Availability | Public internet URL | LAN-only at `10.0.0.2` — not reachable from outside home network without tunnel |
-| Deployment | `git push` or Railway CLI | `ssh 10.0.0.2 + git pull + restart service` |
-| Cold start | Yes (Hobby tier) | No — process stays warm via launchd |
-| Compute cost | Per-use billing | $0 marginal — hardware already owned |
+**Why same endpoint:** The operation is still "send one email" — it just has more headers/attachments. The response schema (`{message_id}`) is unchanged. Same `@pay("$0.01")` decorator applies.
 
-**Key difference — x402 header verification:**
+**Resend SDK attachment format** (verified against official API reference):
+- `attachments` field: list of objects with `content` (bytes or base64 string), `filename` (string), and optionally `content_type` (MIME type, auto-derived if omitted)
+- `content` can be a Python `bytes` object or base64-encoded string
+- For file attachments from URL: use `path` key instead of `content` — Resend fetches the file server-side
+- Max total email size: 40MB after Base64 encoding
+- `cc` and `bcc`: `str | list[str]` — same format as `to`
 
-Railway services use `fastapi-x402` which handles the full 402 → payment → verification cycle. On the home server, this must be implemented manually:
+**Email API changes:**
 
 ```python
-# x402_middleware.py — manual payment header verification
-from fastapi import Request, HTTPException
-import httpx
+# Updated EmailRequest model
+class AttachmentItem(BaseModel):
+    filename: str = Field(..., description="Attachment filename (e.g. 'report.pdf')")
+    path: Optional[str] = Field(None, description="URL to fetch file from (Resend fetches server-side)")
+    content: Optional[str] = Field(None, description="Base64-encoded file content (alternative to path)")
+    content_type: Optional[str] = Field(None, description="MIME type (auto-derived if omitted)")
 
-FACILITATOR_URL = "https://x402.org/facilitator"
-WALLET_ADDRESS = "0x6b21227Ca9Bb3590BB62ff60BA0EFbBf9Ba22ACC"
-PRICE_USDC = "10000"  # 0.01 USDC in 6-decimal units
+class EmailRequest(BaseModel):
+    to: EmailStr = Field(...)
+    subject: str = Field(..., min_length=1, max_length=998)
+    body: str = Field(..., min_length=1, max_length=102400)
+    reply_to: Optional[EmailStr] = Field(None)
+    cc: Optional[Union[EmailStr, List[EmailStr]]] = Field(None,
+        description="CC recipients (single address or list)")
+    bcc: Optional[Union[EmailStr, List[EmailStr]]] = Field(None,
+        description="BCC recipients (single address or list)")
+    attachments: Optional[List[AttachmentItem]] = Field(None, max_length=10,
+        description="File attachments (max 10). Use 'path' for URL-hosted files or 'content' for base64.")
 
-async def verify_x402_payment(request: Request):
-    payment_header = request.headers.get("X-Payment")
-    if not payment_header:
-        raise HTTPException(
-            status_code=402,
-            headers={
-                "X-Payment-Required": f'{{"price":"{PRICE_USDC}","token":"USDC","network":"base","address":"{WALLET_ADDRESS}"}}'
-            }
+def build_send_params(body: EmailRequest) -> dict:
+    # ... existing logic ...
+    if body.cc:
+        params["cc"] = [str(body.cc)] if isinstance(body.cc, str) else [str(a) for a in body.cc]
+    if body.bcc:
+        params["bcc"] = [str(body.bcc)] if isinstance(body.bcc, str) else [str(a) for a in body.bcc]
+    if body.attachments:
+        params["attachments"] = [
+            {k: v for k, v in att.model_dump().items() if v is not None}
+            for att in body.attachments
+        ]
+    return params
+```
+
+**MCP server changes** — update `x402_send_email` Zod schema:
+
+```typescript
+// Add to existing x402_send_email tool params
+cc: z.union([z.string().email(), z.array(z.string().email())]).optional()
+  .describe("CC recipients (single address or array)"),
+bcc: z.union([z.string().email(), z.array(z.string().email())]).optional()
+  .describe("BCC recipients (single address or array)"),
+attachments: z.array(z.object({
+  filename: z.string().describe("Attachment filename"),
+  path: z.string().url().optional().describe("URL to hosted file (Resend fetches it)"),
+  content: z.string().optional().describe("Base64-encoded file content"),
+  content_type: z.string().optional().describe("MIME type (auto-derived if omitted)"),
+})).max(10).optional().describe("File attachments (max 10)"),
+```
+
+**Rate limiting consideration:** Attachments with `path` URLs cause Resend to fetch external URLs server-side — SSRF risk. But Resend does this on their servers, not ours. The email API has no outbound URL fetching from our code today (intentionally — noted in `main.py` line 244). The `path` field delegates fetching to Resend's servers, which is acceptable. If we want to avoid delegating this to Resend, use `content` (base64) only and reject `path` attachments. Recommendation: support both but note the distinction in docs.
+
+**Decision:** Extend existing `POST /send` and `x402_send_email` tool. No new endpoint needed.
+
+---
+
+### Pattern 3: DOCX-to-PDF — Extend Existing Conversion Service
+
+**What:** Add a `"docx"` type to the existing `ConvertRequest` discriminated union in the conversion API. No new Railway service needed — the conversion API is the right home for this.
+
+**Why same service:** DOCX→PDF is semantically identical to HTML→PDF already in the service. Both are document-to-PDF conversions. The service already has WeasyPrint installed, and mammoth (the DOCX→HTML step) is pure Python with zero system dependencies — no new apt packages needed.
+
+**Conversion chain:** `DOCX → HTML (mammoth) → PDF (WeasyPrint)` — both already present or trivially addable.
+
+**Mammoth limitations** (verified — important for docs):
+- Produces clean, semantic HTML from semantic DOCX structure
+- Complex tables: borders/shading ignored, cell content preserved
+- Images: inline base64 by default — may cause large output for image-heavy docs
+- Complex layouts (multi-column, text boxes, floating elements): not supported
+- Best for: reports, letters, text-heavy documents
+- Not suitable for: pixel-perfect layout preservation, complex Word templates
+
+**Dockerfile impact:** Mammoth is pure Python — no new `apt-get` deps. Add to `requirements.txt` only.
+
+```python
+# requirements.txt addition
+mammoth>=1.8.0
+
+# main.py addition
+import mammoth
+
+class DocxConvertRequest(BaseModel):
+    type: Literal["docx"]
+    url: BoundedHttpUrl
+
+ConvertRequest = Annotated[
+    Union[ImageConvertRequest, CsvConvertRequest, HtmlConvertRequest, DocxConvertRequest],
+    Field(discriminator="type"),
+]
+
+def sync_docx_to_pdf(file_bytes: bytes, source_url: str) -> bytes:
+    """Convert DOCX bytes to PDF via mammoth (DOCX→HTML) + WeasyPrint (HTML→PDF).
+
+    Sync — must be called via run_in_threadpool.
+    Uses safe_url_fetcher for SSRF protection on WeasyPrint secondary fetches.
+    """
+    # Step 1: DOCX → HTML
+    result = mammoth.convert_to_html(BytesIO(file_bytes))
+    html_string = result.value  # Clean, semantic HTML
+
+    # Step 2: HTML → PDF (reuse existing WeasyPrint pattern)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_path = os.path.join(tmpdir, "output.pdf")
+        doc = weasyprint.HTML(
+            string=html_string,
+            base_url=source_url,
+            url_fetcher=safe_url_fetcher,
         )
-    # Verify payment with x402 facilitator
-    async with httpx.AsyncClient() as client:
-        resp = await client.post(
-            f"{FACILITATOR_URL}/verify",
-            json={"payment": payment_header, "amount": PRICE_USDC, "address": WALLET_ADDRESS}
-        )
-        if resp.status_code != 200:
-            raise HTTPException(status_code=402, detail="Payment verification failed")
+        doc.write_pdf(out_path)
+        with open(out_path, "rb") as f:
+            return f.read()
 
-@app.post("/transcribe")
-async def transcribe(request: Request, audio_url: str):
-    await verify_x402_payment(request)
-    # ... MLX Whisper call ...
+# In convert() handler — add to dispatch block:
+elif body.type == "docx":
+    output_bytes = await run_in_threadpool(sync_docx_to_pdf, file_bytes, source_url)
+    mime_type = "application/pdf"
 ```
 
-**nginx config for transcription (new server block):**
+**MCP server changes** — update `x402_convert_file` type enum:
 
-```nginx
-# /etc/nginx/sites-available/x402-transcription
-server {
-    listen 8889;
-    server_name 10.0.0.2;
-
-    location / {
-        proxy_pass http://127.0.0.1:8889;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        # Transcription can be slow — generous timeout
-        proxy_read_timeout 120s;
-        proxy_connect_timeout 10s;
-    }
-}
+```typescript
+type: z.enum(["image", "csv", "html_pdf", "docx"])
+  .describe("Conversion type: image, csv, html_pdf, or docx (DOCX to PDF)")
 ```
 
-Note: The brand site is already on port 8888. Transcription uses port 8889. The MCP server calls `http://10.0.0.2:8889` directly — this is fine because the MCP server runs on the same LAN.
+**Decision:** Extend existing `/convert` endpoint and `x402_convert_file` tool. No new service or endpoint. Deploy triggers a Railway redeploy of the conversion service.
 
-**launchd plist for process persistence:**
+---
 
-```xml
-<!-- ~/Library/LaunchAgents/com.x402.transcription.plist -->
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" ...>
-<plist version="1.0">
-<dict>
-    <key>Label</key>
-    <string>com.x402.transcription</string>
-    <key>ProgramArguments</key>
-    <array>
-        <string>/usr/local/bin/uvicorn</string>
-        <string>main:app</string>
-        <string>--host</string><string>127.0.0.1</string>
-        <string>--port</string><string>8889</string>
-    </array>
-    <key>WorkingDirectory</key>
-    <string>/Users/jameswisdom/projects/x402-transcription-api</string>
-    <key>RunAtLoad</key>
-    <true/>
-    <key>KeepAlive</key>
-    <true/>
-    <key>StandardOutPath</key>
-    <string>/tmp/x402-transcription.log</string>
-    <key>StandardErrorPath</key>
-    <string>/tmp/x402-transcription-error.log</string>
-</dict>
-</plist>
+### Pattern 4: Custom Domain + SSL — Cloudflare Tunnel (Recommended)
+
+**What:** The brand site is currently served by nginx on port 8888, local network only, HTTP. To make it public with HTTPS and a custom domain, use a second Cloudflare Tunnel — the same mechanism already proven for the transcription API (`transcribe.jameswisdom.ink`).
+
+**Why Cloudflare Tunnel over Let's Encrypt + nginx SSL:**
+- No router config or port-forwarding required (macOS Monterey, home network)
+- No static IP required — tunnel re-establishes on reconnect
+- SSL is fully automatic — Cloudflare manages certificates
+- Already proven: the transcription tunnel is working with a custom subdomain
+- AdGuard Home occupies port 80 — Let's Encrypt HTTP-01 challenge would fail without workaround
+- Replicates existing pattern exactly — no new tools or skills needed
+
+**Why not Let's Encrypt DNS-01:** Requires Cloudflare API token + certbot `dns-cloudflare` plugin. Works fine but adds complexity for macOS cert renewal. The Cloudflare Tunnel approach is simpler and already working.
+
+**Config structure:**
+
+The transcription service already uses a tunnel. The brand site tunnel can either:
+1. **Separate tunnel** — new `cloudflared` config, new CNAME in Cloudflare DNS. Cleanest separation.
+2. **Same tunnel, additional public hostname** — Cloudflare Tunnels support multiple public hostnames per tunnel. One `cloudflared` process handles both `x402.jameswisdom.ink → localhost:8888` and `transcribe.jameswisdom.ink → localhost:PORT`. More efficient but couples two services.
+
+**Recommendation: single tunnel, two hostnames.** The transcription tunnel is already running via launchd. Add the brand site as a second hostname in the same config:
+
+```yaml
+# ~/.cloudflared/config.yml (extend existing or create if not present)
+tunnel: <existing-tunnel-uuid>
+credentials-file: ~/.cloudflared/<uuid>.json
+
+ingress:
+  - hostname: x402.jameswisdom.ink
+    service: http://localhost:8888
+  - hostname: transcribe.jameswisdom.ink
+    service: http://localhost:<transcription-port>
+  - service: http_status:404
 ```
 
-### Pattern 3: MCP Tool Count Per API
+**DNS change:** Add CNAME `x402` → `<tunnel-uuid>.cfargotunnel.com` in Cloudflare DNS panel. Cloudflare auto-manages HTTPS for the domain.
 
-**What:** Each new API gets 1–2 MCP tools: one for the primary action, optionally one for metadata/info about the service.
+**nginx changes:** None required. nginx keeps serving on port 8888 as-is. The Cloudflare Tunnel terminates TLS at Cloudflare's edge and forwards plain HTTP to `localhost:8888`. No SSL config needed in nginx.
 
-**Decision per API:**
+**Brand site build changes:** Update `SITE_URL` env var before build:
 
-| API | Tool(s) | Rationale |
-|-----|---------|-----------|
-| Web Scraping | `x402_scrape` (1 tool) | Single operation: URL → content. Params cover all extraction modes. |
-| Email Sending | `x402_email_send` (1 tool) | Single operation: compose + send. No secondary tool needed. |
-| Web Search | `x402_search` (1 tool) | Single operation: query → results. Count (N) is a param. |
-| File Conversion | `x402_convert_file` (1 tool) | Single operation: file URL + target format → converted file. Format pair covers all conversions. |
-| Audio Transcription | `x402_transcribe` (1 tool) | Single operation: audio URL → transcript. Language is optional param. |
+```bash
+# In build script or before astro build
+SITE_URL=https://x402.jameswisdom.ink npm run build
+```
 
-Total: 5 new tools. MCP server grows from 6 to 11 tools.
+The `astro.config.mjs` already uses `process.env.SITE_URL || 'https://x402.todo'` — no code change needed, just correct env var at build time.
 
-The `x402_network_info` tool (already exists) will be updated to include the 5 new APIs in its health check output — this is a modification, not a new tool.
+**Sidebar navigation update:** The `site/astro.config.mjs` sidebar currently only has Getting Started (2 pages) and Reference (1 page, api-reference). Add documentation for all 5 v1.1 APIs. Two options:
+
+Option A: Add all APIs to the existing `api-reference.mdx` (simpler, single page update).
+Option B: Create separate pages per API, add to sidebar (better for SEO and deep linking).
+
+**Recommendation: Option A** for v2.0 — update `api-reference.mdx` in place. Avoids sidebar restructuring and is faster to ship. Separate pages can be split in a future milestone.
 
 ---
 
 ## Data Flow
 
-### Standard Request Flow (Railway APIs, paid mode)
+### Crawl Request Flow
 
 ```
-MCP Client calls x402_scrape({ url: "https://example.com" })
+MCP Client calls x402_crawl_site({ url: "https://docs.example.com", max_pages: 15 })
     │
-src/index.ts tool handler
-    │  PRIVATE_KEY present → usePaid = true
+src/index.ts → apiPost(base, "/crawl", { url, max_pages, max_depth, same_domain_only }, true)
     │
-apiGet(base, "/scrape?url=...", usePayment=true)
+x402-fetch → POST https://x402-scraping-api-production.up.railway.app/crawl
     │
-getPaidFetch() → x402-fetch wraps native fetch with payment logic
+fastapi-x402 → 402 → x402-fetch signs payment → retry with X-Payment header
     │
-HTTP GET https://x402-scraping-api.up.railway.app/scrape?url=...
+crawl() handler: BFS queue starting from seed URL
+    │  For each URL in queue:
+    │    1. validate_url_for_ssrf(url)  — blocks private IPs
+    │    2. scrape_page(url, wait_for=None)  — reuses existing Playwright scraper
+    │    3. extract_content(html, url)  — reuses existing extraction pipeline
+    │    4. Append to results
+    │    5. Enqueue discovered links (if same_domain and depth < max_depth)
     │
-Railway receives request, fastapi-x402 middleware checks for X-Payment header
-    │  No header → 402 response with payment requirements
+JSON: { success, seed, pages_crawled, results: [...ScrapeResult] }
     │
-x402-fetch intercepts 402, signs USDC payment, retries with X-Payment header
-    │
-Railway verifies payment, routes to handler, runs Playwright scrape
-    │
-JSON response → x402-fetch → apiGet → textResult → MCP client
+textResult → MCP client
 ```
 
-### Standard Request Flow (Railway APIs, free test mode)
+### Email with Attachments Flow
 
 ```
-MCP Client calls x402_scrape({ url: "https://example.com" })
+MCP Client calls x402_send_email({ to, subject, body, cc: [...], attachments: [{path: url}] })
     │
-src/index.ts — PRIVATE_KEY absent → usePaid = false
+src/index.ts → apiPost(base, "/send", { to, subject, body, cc, attachments }, true)
     │
-apiGet(base, "/test/scrape?url=...", usePayment=false)
+x402-fetch → POST /send with X-Payment header
     │
-HTTP GET https://x402-scraping-api.up.railway.app/test/scrape?url=...
-    │  No middleware — test endpoint bypasses payment
-    │  Hardcoded domain allowlist enforced in route handler
+send_email() handler:
+    │    check_and_increment_wallet_limit(wallet)
+    │    check_and_increment_domain_limit(wallet, to)
+    │    build_send_params() → includes cc, bcc, attachments in Resend params
+    │    _do_send() → resend.Emails.send(params)
+    │    Resend API: fetches attachment URLs server-side if using "path" key
     │
-JSON response → textResult → MCP client
+{ message_id } → textResult → MCP client
 ```
 
-### Transcription Request Flow (home server, paid mode)
+### DOCX Conversion Flow
 
 ```
-MCP Client calls x402_transcribe({ audio_url: "https://..." })
+MCP Client calls x402_convert_file({ url: "https://.../file.docx", type: "docx" })
     │
-src/index.ts — usePaid = true
+src/index.ts → apiPost(base, "/convert", { url, type: "docx" }, true)
     │
-apiPost("http://10.0.0.2:8889", "/transcribe", { url: ... }, true)
+convert() handler:
+    │    1. download_file(url) → bytes (10MB limit, SSRF validated, streaming)
+    │    2. run_in_threadpool(sync_docx_to_pdf, file_bytes, source_url)
+    │       ├── mammoth.convert_to_html(BytesIO(file_bytes)) → HTML string
+    │       └── weasyprint.HTML(string=html, url_fetcher=safe_url_fetcher).write_pdf()
+    │    3. output size guard (8MB limit)
+    │    4. base64.b64encode(pdf_bytes)
     │
-x402-fetch → HTTP POST http://10.0.0.2:8889/transcribe
+{ success, type: "docx", mime_type: "application/pdf", data: "<base64>" }
     │
-nginx reverse proxy → uvicorn at 127.0.0.1:8889
-    │
-FastAPI — custom x402 middleware checks X-Payment header
-    │  No header → 402 with payment requirements
-    │
-x402-fetch signs payment, retries
-    │
-FastAPI verifies payment via x402 facilitator API
-    │
-MLX Whisper: download audio URL → transcribe → JSON response
-    │  (can take 5–60s depending on audio length)
-    │
-nginx → x402-fetch → apiPost → textResult → MCP client
+textResult → MCP client
 ```
 
-### Key Data Flow Differences: Railway vs Home Server
+### Brand Site Request Flow (after v2.0)
 
-| Step | Railway | Home Server |
-|------|---------|-------------|
-| x402 enforcement | `fastapi-x402` library (zero code) | Hand-rolled middleware in `x402_middleware.py` |
-| SSL termination | Railway provides HTTPS | nginx on LAN — HTTP only (MCP server on same LAN, acceptable) |
-| Process management | Railway platform | macOS launchd |
-| Deployment | `git push` to Railway | SSH + git pull + `launchctl kickstart` |
-| Availability to MCP server | Always (public URL) | Only when home server is on and accessible |
-| URL in `src/index.ts` APIS dict | `https://...up.railway.app` | `http://10.0.0.2:8889` |
+```
+Public user visits https://x402.jameswisdom.ink
+    │
+DNS: x402.jameswisdom.ink CNAME → <tunnel-uuid>.cfargotunnel.com
+    │
+Cloudflare edge: TLS termination (auto-managed cert)
+    │
+Cloudflare Tunnel: encrypted tunnel to cloudflared process on home server
+    │
+cloudflared → http://localhost:8888 (nginx)
+    │
+nginx: serves Astro static files from /dist
+    │
+HTML/JS/CSS → Cloudflare → user's browser (HTTPS throughout)
+```
 
 ---
 
-## Scaling Considerations
+## Recommended Project Structure
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| Current (1 dev, personal use, LAN) | All services appropriate — Railway for 4 APIs, home server for transcription |
-| Public launch (external agents calling APIs) | Transcription service is LAN-only — need Cloudflare Tunnel or ngrok to expose home server; or migrate to Railway with Whisper.cpp or Groq Whisper API |
-| High traffic (100+ requests/day) | Railway services handle this automatically. Transcription: MLX Whisper is CPU-bound, sequential — queue system needed if concurrent requests arrive |
-| Multiple developers | No change to Railway services. Home server transcription is the single point of fragility — document the dependency explicitly |
+### v2.0 Additions to Existing Services
 
-### Scaling Priorities
+```
+x402-scraping-api/
+├── main.py           # + CrawlRequest model, crawl() endpoint, crawl_site() function
+├── fixture.json      # existing single-page fixture (unchanged)
+└── fixture_crawl.json  # NEW: multi-page crawl fixture for /crawl/test
 
-1. **First bottleneck:** Transcription is unavailable when home server is down, rebooting, or on a different network. Railway APIs are unaffected. Mitigation: launchd KeepAlive handles normal reboots. For v1.1 (personal use), this is acceptable — document clearly.
-2. **Second bottleneck:** `src/index.ts` monolith at 11+ tools approaches 600 lines. Extract to `src/tools/` modules after v1.1 ships — this is a refactor, not a feature.
+x402-email-api/
+└── main.py           # + cc, bcc, attachments to EmailRequest and build_send_params()
 
----
+x402-conversion-api/
+├── main.py           # + DocxConvertRequest, sync_docx_to_pdf()
+└── requirements.txt  # + mammoth>=1.8.0
 
-## Anti-Patterns
+src/
+└── index.ts          # + x402_crawl_site tool, update x402_send_email, x402_convert_file
 
-### Anti-Pattern 1: One Railway Service for All 4 New APIs
+site/src/content/docs/
+└── api-reference.mdx  # Add v1.1 API docs (all 5 APIs currently missing)
 
-**What people do:** Bundle scraping, email, search, and file conversion into a single FastAPI service to minimize Railway projects.
-
-**Why it's wrong:** Different dependency footprints (Playwright is huge, Resend is tiny), different scaling needs, different Railway environment configs. One slow deploy or broken dependency in one API takes down all four. Rollback becomes impossible if the services are coupled. Railway Hobby tier allows multiple projects — there is no cost reason to bundle.
-
-**Do this instead:** One Railway service per API. Each deploys independently. Each has its own `requirements.txt` — Playwright's Chromium install doesn't bleed into the email sender's minimal footprint.
-
-### Anti-Pattern 2: Using fastapi-x402 on the Home Server Without Verifying It Works on macOS
-
-**What people do:** Copy the Railway pattern exactly — `pip install fastapi-x402`, add middleware — and assume it works on macOS Monterey x86_64 the same way it works on Railway's Linux containers.
-
-**Why it's wrong:** `fastapi-x402` may have Linux-specific dependencies or expect Railway's environment variables (PORT, etc.). The library hasn't been validated on macOS. More importantly, the home server's payment verification doesn't need to be Railway-compatible — it just needs to correctly implement the x402 protocol spec.
-
-**Do this instead:** Implement the x402 middleware manually on the home server using `httpx` to call the x402 facilitator API for payment verification. This is ~30 lines of code and has zero platform dependencies. Test it against the MCP server locally before declaring it done.
-
-### Anti-Pattern 3: Pointing MCP Server at Home Server IP for Railway Services
-
-**What people do:** Set `baseUrl` for scraping/email/search/conversion to `http://10.0.0.2:XXXX` during dev, then forget to update before shipping.
-
-**Why it's wrong:** The published npm package (`x402-mcp-server`) will be installed by others via `npx`. Their MCP server will try to call `http://10.0.0.2` — their LAN, not the developer's — and fail with a connection refused error.
-
-**Do this instead:** Railway services always get their production Railway URL in `src/index.ts`. Only the transcription service legitimately lives at `http://10.0.0.2:8889` — and the ARCHITECTURE doc should note this is a personal-use constraint (external users can't reach the home server).
-
-### Anti-Pattern 4: Free Test Endpoint Allows Arbitrary URLs
-
-**What people do:** Build the free test endpoint as a mirror of the paid endpoint but without payment enforcement — any URL allowed.
-
-**Why it's wrong:** Free endpoints become abuse vectors. If scraping, transcription, or search accept any URL for free, the service will be scraped by bots and costs (Railway compute, Resend API calls if any leak through) will increase. The free tier is specifically for developer evaluation.
-
-**Do this instead:** Free endpoints enforce a hardcoded allowlist: `example.com`, `example.org`, `httpbin.org` for URL-based tools. For email, the free endpoint sends only to a hardcoded test inbox (not user-specified `to` address). For search, the free endpoint returns hardcoded fixture data.
+~/.cloudflared/
+└── config.yml        # Add x402.jameswisdom.ink → localhost:8888 ingress rule
+```
 
 ---
 
@@ -480,64 +523,134 @@ nginx → x402-fetch → apiPost → textResult → MCP client
 
 ### External Services
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Railway (x4 new services) | Python FastAPI + fastapi-x402, deploy via Railway CLI or git push | Proven pattern from screenshot/PDF/sentiment services — replicate exactly |
-| Resend API | Python `resend` SDK in email service | API key in Railway env var `RESEND_API_KEY` — never in MCP server |
-| Web Search Backend (TBD) | HTTP API call from search service | SerpAPI / Brave / Tavily — research during search API build; key in Railway env var |
-| MLX Whisper | Python `mlx_whisper` library call in transcription service | Already installed on home Mac (`whisper-large-v3-mlx` model per MEMORY.md) — no install needed |
-| x402 Facilitator API | HTTP call from home server transcription middleware | `https://x402.org/facilitator/verify` — payment verification |
-| macOS launchd | plist file in `~/Library/LaunchAgents/` | Keeps transcription uvicorn process alive after reboots |
+| Service | Integration Pattern | v2.0 Change | Notes |
+|---------|---------------------|-------------|-------|
+| Resend API | Python `resend` SDK in email service | Add cc, bcc, attachments to SDK params | SDK already supports all three — zero new dependencies |
+| Cloudflare Tunnel | `cloudflared` daemon, config.yml | New ingress rule for brand site | Already proven for transcription service |
+| Cloudflare DNS | CNAME record | Add CNAME for site subdomain | Managed in Cloudflare dashboard |
+| Railway (scraping) | FastAPI + fastapi-x402 | New `/crawl` endpoint | Same service, redeploy |
+| Railway (conversion) | FastAPI + fastapi-x402 | New "docx" type in union | Same service, redeploy — no new apt deps |
 
 ### Internal Boundaries
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| MCP server ↔ Railway APIs | HTTP via x402-fetch, URLs in `APIS` dict | Add 4 new entries to APIS dict in `src/index.ts` |
-| MCP server ↔ Home transcription | HTTP via x402-fetch, `http://10.0.0.2:8889` | Same x402-fetch call — the library doesn't care if the URL is Railway or home server |
-| nginx ↔ uvicorn (home server) | Local proxy on 127.0.0.1:8889 | nginx forwards to local process; not exposed directly |
-| Home transcription ↔ x402 facilitator | Outbound HTTPS from home server | Requires internet access from home server; verify firewall rules |
-| `x402_network_info` tool ↔ all APIs | Parallel `checkHealth()` calls | Update `APIS` dict to include new services; health checks run on each `x402_network_info` call |
+| Boundary | Communication | v2.0 Notes |
+|----------|---------------|------------|
+| MCP server ↔ Scraping API | HTTP via x402-fetch | Add `POST /crawl` call path for new `x402_crawl_site` tool |
+| MCP server ↔ Email API | HTTP via x402-fetch | Forward cc, bcc, attachments params in payload |
+| MCP server ↔ Conversion API | HTTP via x402-fetch | Add "docx" to type enum in Zod schema and payload |
+| cloudflared ↔ nginx | `http://localhost:8888` | No nginx config change — tunnel routes to existing nginx |
+| Crawl handler ↔ scrape_page() | Direct Python call (same module) | BFS loop calls existing scrape function N times |
+| sync_docx_to_pdf() ↔ weasyprint | In-process, threadpool | Same pattern as sync_html_to_pdf() already in conversion API |
 
 ---
 
 ## Build Order
 
-Build order respects two constraints: (1) Railway services are independent of each other and can be built in parallel or any order, (2) the MCP server update (`src/index.ts`) requires each service's Railway URL, so it must happen after each service is deployed.
+Dependencies between v2.0 features:
 
-**Recommended sequence:**
+```
+[1] Brand site docs update (no external deps)
+        │
+        ↓
+[2] Custom domain + SSL (depends on: knowing final domain URL for astro SITE_URL)
+        │
+        ↓ (site is public — can share URLs)
+[3a] Crawl endpoint (no external deps, standalone Railway redeploy)
+[3b] Email attachments (no external deps, standalone Railway redeploy)
+[3c] DOCX→PDF (no external deps, standalone Railway redeploy)
+        │
+        ↓ (all backends done)
+[4] MCP server update (src/index.ts) — add crawl tool, update email+convert schemas
+        │
+        ↓
+[5] npm publish v2.0.0
+```
 
-1. **Scraping API** — start here because it has the most interesting complexity (Playwright headless in Railway container — verify Playwright Chromium install works in Railway's Docker environment before committing to it). Free test endpoint with allowlisted domains. Deploy to Railway, get URL.
+**Recommended build sequence with rationale:**
 
-2. **File Conversion API** — second because it's the most self-contained (no third-party API keys needed, just Python conversion libs: `weasyprint` for html-to-pdf, `Pillow` for image resize, `pandas` for csv-to-json). Deploy to Railway, get URL.
+**Step 1: Brand site docs** — Write first because it's pure content work (no backend changes) and can be done in parallel with anything. Updating `api-reference.mdx` with all 5 v1.1 APIs is straightforward copy/adapt from existing 6 tools. No deploys needed.
 
-3. **Search API** — third because it needs a search backend decision first. Research SerpAPI vs Brave vs Tavily during the file conversion build to avoid blocking. Once decided, build is straightforward (thin wrapper). Deploy to Railway, get URL.
+**Step 2: Custom domain + SSL** — Do before building new features because the brand site URL (`SITE_URL`) must be set correctly in `astro.config.mjs` for OG tags and canonical URLs. Once the domain is live, rebuild and redeploy site. Cloudflare Tunnel config change takes ~5 minutes.
 
-4. **Email API** — fourth because it requires a Resend account and API key setup. Simple to build (Resend has a clean Python SDK). The free test endpoint sends to a hardcoded test address. Deploy to Railway, get URL.
+**Step 3a: DOCX→PDF** — Build first among backend features because it has the cleanest scope: one new model class, one new function, one new `elif` branch. No new system dependencies (mammoth is pure Python). Validates Railway redeploy works before touching scraping/email.
 
-5. **Transcription API (home server)** — last among backends because it has the most infrastructure work (custom x402 middleware, nginx config, launchd plist). MLX Whisper is already installed, which eliminates the hardest dependency. Do this after Railway services validate that x402 middleware patterns are working end-to-end.
+**Step 3b: Email attachments** — Build second among backends. Purely additive Pydantic model change. The only new complexity is the Resend `attachments` parameter format — already confirmed against the Resend API reference.
 
-6. **MCP server update (`src/index.ts`)** — after all 5 service URLs are known. Add 5 entries to `APIS` dict, 5 `server.tool()` blocks. Update `x402_network_info` health check logic to include new services. Bump version to `1.1.0`.
+**Step 3c: Crawl endpoint** — Build last among backends because it's the most complex (stateful BFS loop, timeout risks, Railway cold start timing). By the time this is built, the DOCX and email deploys have validated Railway deploy cycle is working.
 
-7. **Integration test** — test all 11 tools in both free and paid mode before `npm publish`.
+**Step 4: MCP server update** — After all three Railway backends are deployed with new endpoints/capabilities. Add `x402_crawl_site` tool, update `x402_send_email` and `x402_convert_file` Zod schemas.
 
-8. **`npm publish 1.1.0`** — after integration test passes.
+**Step 5: npm publish** — After integration test in both free and paid modes.
 
-**Rationale for ordering scraping first:** Playwright in a Railway container requires Chromium installation at build time. Railway uses Nixpacks to detect Python apps. Chromium install in Nixpacks requires a `nixpacks.toml` config (`pkgs = ["chromium", "playwright"]`) — this is the highest-risk unknown in the batch. Proving it works first means Railway compatibility is validated before the other (simpler) services are built.
+**Parallel work possible:** Steps 1, 3a, 3b, 3c can all be developed simultaneously (separate files, separate services). The only hard sequencing is: domain before site rebuild, backends before MCP update, MCP update before npm publish.
 
-**Rationale for transcription last:** The home server pattern has more infrastructure steps (nginx, launchd, custom middleware) than any single Railway service. Building it last means x402 middleware patterns are already understood from the Railway implementations, reducing implementation uncertainty.
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Crawl as Parameter on /scrape
+
+**What people do:** Add a `crawl=true` boolean to `POST /scrape` to avoid a new endpoint.
+
+**Why it's wrong:** The response schema changes completely (single result vs array). The price should be different (N page loads). Putting both behaviors in one endpoint with a boolean flag violates single-responsibility and makes the API contract ambiguous.
+
+**Do this instead:** New `POST /crawl` endpoint with its own request model and `@pay("$0.05")` decorator. Reuses existing `scrape_page()` and `extract_content()` — just orchestrates them in a BFS loop.
+
+### Anti-Pattern 2: DOCX Conversion in a New Railway Service
+
+**What people do:** Create a new `x402-docx-api` service because DOCX conversion feels like a separate concern.
+
+**Why it's wrong:** Mammoth is pure Python (no system deps). WeasyPrint is already installed in the conversion service. The conversion service is the right home for all file format transformations — that's its stated purpose. A new service adds Railway billing, a new Dockerfile, and a new URL to manage for a feature that adds ~30 lines to an existing service.
+
+**Do this instead:** Add `"docx"` as a new type in the existing `ConvertRequest` discriminated union. One `requirements.txt` addition (`mammoth`), one new function, one new `elif` branch.
+
+### Anti-Pattern 3: Let's Encrypt on Home Server (Port 80 Conflict)
+
+**What people do:** Install certbot, configure nginx for SSL, fight with port 80 being occupied by AdGuard Home.
+
+**Why it's wrong:** AdGuard Home is already on port 80 (`PROJECT.md` notes "Port 8888 for nginx — AdGuard Home occupies port 80"). HTTP-01 challenge requires port 80. DNS-01 challenge requires certbot `dns-cloudflare` plugin + API token configuration + renewal cron. The Cloudflare Tunnel approach is already working (transcription service) and handles SSL at the edge with zero local configuration.
+
+**Do this instead:** Add the brand site as a second hostname in the existing (or new) Cloudflare Tunnel config. SSL is managed by Cloudflare automatically.
+
+### Anti-Pattern 4: Attachment Path URLs in Email Without Considering Semantics
+
+**What people do:** Accept user-provided `path` URLs in attachment objects and pass them directly to Resend — letting Resend's servers fetch arbitrary URLs.
+
+**Why it might be risky:** The email API currently has no outbound URL fetching from user-provided input (intentionally). Adding `path` support delegates URL fetching to Resend's servers, which is fine but changes the security model slightly. Resend will fetch whatever URL is provided.
+
+**Do this instead:** Accept both `path` and `content` (base64) in the API schema but document clearly that `path` causes Resend to fetch the URL. This is acceptable — Resend's servers are responsible for fetching, not ours. Alternatively, only accept `content` (base64) to keep the email service's outbound network behavior unchanged. The simpler approach for v2.0 is supporting both and documenting the distinction.
+
+---
+
+## Scaling Considerations
+
+| Scale | Architecture Adjustments |
+|-------|--------------------------|
+| Current (personal + small public traffic) | All changes appropriate. Crawl max_pages=30 cap prevents Railway abuse. |
+| Growing public traffic | Crawl is the riskiest — each crawl call consumes N * scrape compute time. Add per-wallet crawl rate limiting (same pattern as email `check_and_increment_wallet_limit`) before public launch. |
+| High traffic | Cloudflare Tunnel for brand site: Cloudflare CDN caches static assets automatically (Astro static output is cacheable). No changes needed to serve higher traffic. Railway services auto-scale within Hobby tier limits. |
+
+### Scaling Priorities
+
+1. **First bottleneck for crawl:** Railway 30-second request timeout. With max_pages=30 at ~2s/page, worst case is 60s — exceeds Railway's default. Either (a) cap max_pages at 15 to stay under 30s, or (b) implement async job pattern (crawl returns a job_id, poll for results). For v2.0, cap at 15 pages and document. Async jobs are a future milestone feature.
+
+2. **First bottleneck for site traffic:** None for static Astro site. Cloudflare caches static assets at edge. Home server nginx only serves cache misses.
 
 ---
 
 ## Sources
 
-- Existing `src/index.ts`: established APIS dict pattern, apiGet/apiPost helpers, getPaidFetch lazy init, Zod param validation conventions
-- Existing Railway services (screenshot, PDF, sentiment): baseline for FastAPI + fastapi-x402 structure
-- PROJECT.md v1.1 requirements: 5 API targets, Railway vs home server hosting decision, MLX Whisper on home server confirmed
-- MEMORY.md: `whisper-large-v3-mlx` model confirmed installed on home Mac; nginx already running at port 8888 on 10.0.0.2
-- PITFALLS.md (v1.0): Zod `.url()` and `.regex()` required on all input params — apply same discipline to v1.1 tools
-- x402 protocol: 402 response header format, X-Payment header structure, facilitator verification endpoint
+- `x402-scraping-api/main.py` (live): `scrape_page()`, `extract_content()`, `ScrapeRequest` model, SSRF middleware, `@pay("$0.02")` pattern
+- `x402-email-api/main.py` (live): `EmailRequest`, `build_send_params()`, `_do_send()`, `check_and_increment_wallet_limit()` patterns
+- `x402-conversion-api/main.py` (live): discriminated union pattern, `sync_html_to_pdf()`, `safe_url_fetcher`, `run_in_threadpool` usage
+- `x402-conversion-api/Dockerfile` (live): WeasyPrint system deps, smoke test pattern
+- `src/index.ts` (live): APIS dict, apiPost helper, Zod validation patterns for all 11 tools
+- `site/astro.config.mjs` (live): `SITE_URL` env var pattern, sidebar structure
+- Resend API reference (https://resend.com/docs/api-reference/emails/send-email): cc, bcc, attachments param format confirmed — content (bytes/base64), path (URL), filename, content_type
+- mammoth PyPI (https://pypi.org/project/mammoth/): pure Python, DOCX→HTML, limitation on complex layouts
+- Cloudflare Tunnel docs: CNAME auto-creation, multiple public hostnames per tunnel, automatic SSL at edge
+- `.planning/PROJECT.md`: home server constraints (port 8888, AdGuard Home on port 80, macOS Monterey, existing Cloudflare Tunnel for transcription)
 
 ---
-*Architecture research for: v1.1 Universal Utility APIs — 5 new backends integrating with existing x402 MCP server*
-*Researched: 2026-03-12*
+*Architecture research for: x402 API Network v2.0 — Site Launch & Platform Polish*
+*Researched: 2026-03-15*

@@ -1,306 +1,371 @@
 # Stack Research
 
-**Domain:** v1.1 Universal Utility APIs — 5 new backend services + MCP tool additions
-**Researched:** 2026-03-12
+**Domain:** x402 API Network — v2.0 Site Launch & Platform Polish
+**Researched:** 2026-03-15
 **Confidence:** HIGH
 
 ## Context
 
-The existing stack is locked in and working:
+This is a subsequent milestone on an existing, working project. The v1.1 stack is locked in:
+
 - **MCP server:** TypeScript, `@modelcontextprotocol/sdk ^1.11.0`, `viem ^2.0.0`, `x402-fetch ^1.1.0`, `zod ^4.3.6`
-- **API pattern:** Python/FastAPI on Railway with `fastapi-x402` (proven with screenshot, PDF, crypto sentiment)
-- **Home server:** macOS Monterey x86_64 at 10.0.0.2 (nginx, for transcription only)
+- **API backends:** Python/FastAPI on Railway (scraping, conversion, search, email) + home server (transcription)
+- **Brand site:** Astro 5 + Starlight 0.37.x, static output, deployed via nginx on home server port 8888
+- **Cloudflare Tunnel:** Locally managed config at `~/.cloudflared/config.yml`, tunnel ID `2223ce56-...`
+- **Email:** Resend SDK `^2.x`, `resend>=2.0.0,<3.0.0` in requirements.txt
+- **Scraping:** Playwright `1.44.0` (pinned) + trafilatura + beautifulsoup4 + lxml
 
-This research covers ONLY what's new for the 5 new APIs. Do not re-research the existing stack.
-
----
-
-## API 1: Web Scraping (Railway)
-
-**Approach:** Python/FastAPI — same pattern as screenshot and PDF APIs.
-
-### Python Backend Libraries
-
-| Library | Version | Purpose | Why |
-|---------|---------|---------|-----|
-| `playwright` | `^1.58.0` | Headless browser, full JS rendering | Matches the existing screenshot API approach; handles SPAs and JS-heavy sites; asyncio-native |
-| `beautifulsoup4` | `^4.12.3` | HTML parsing + structured extraction | Industry standard; lxml backend; use alongside playwright for post-render parsing |
-| `lxml` | `^5.3.0` | Fast XML/HTML parser backend for BS4 | Faster than html.parser, required as BS4 backend for production use |
-
-**Note on Cheerio:** The original plan mentions Cheerio, but this runs on the Python/FastAPI backend on Railway, not in the MCP server TypeScript layer. Use BeautifulSoup4 with lxml instead. Cheerio would only apply if the scraper were reimplemented in Node.js.
-
-### Installation
-
-```bash
-pip install playwright beautifulsoup4 lxml
-playwright install chromium
-```
-
-### Pattern Match
-
-Follows existing screenshot API pattern — stateless POST with `url` param, returns structured JSON. Add `/test/scrape` free endpoint limited to safe domains.
+This research covers ONLY the five new v2.0 features. Do not re-research the existing stack.
 
 ---
 
-## API 2: Email Sending (Railway)
+## Feature 1: Custom Domain + SSL for Brand Site
 
-**Decision:** Resend. Already chosen in PROJECT.md. No research needed for the choice, only for the implementation library.
+### Situation
 
-### Python Backend Libraries
+The brand site runs at `http://10.0.0.2:8888` (local network only). The Cloudflare Tunnel already
+exists and is locally managed (`~/.cloudflared/config.yml`). It currently routes several subdomains
+(eth-bin-bot, btc-bin-bot, bot.jameswisdom.ink, etc.) and is launchd-managed for persistence.
+
+### Solution: Add Public Hostname to Existing Cloudflare Tunnel
+
+No new infrastructure is needed. Add one ingress entry to `~/.cloudflared/config.yml`:
+
+```yaml
+- hostname: x402.jameswisdom.ink   # or docs.jameswisdom.ink, etc.
+  service: http://localhost:8888
+```
+
+Cloudflare terminates SSL automatically. The tunnel proxies HTTP from nginx to Cloudflare's HTTPS
+edge. No certificate management required on the home server.
+
+### What This Does NOT Require
+
+| Approach | Verdict | Why Not |
+|----------|---------|---------|
+| Let's Encrypt / certbot | Not needed | Cloudflare handles TLS termination at its edge |
+| nginx SSL config | Not needed | Tunnel sends HTTP to nginx; HTTPS is Cloudflare-side |
+| New tunnel | Not needed | Existing tunnel supports multiple ingress rules |
+| New cloudflared process | Not needed | Restart existing launchd service after config change |
+
+### Supporting Technologies
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| Cloudflare Tunnel (cloudflared) | Existing | Route public hostname to local nginx | Already in use for transcription API and crypto bots; zero-config SSL |
+| nginx | Existing (home server) | Serve static Astro build from `/dist` | Already serving port 8888 |
+| Astro | 5.x (existing) | Static site generator | Already built; no change needed for the site engine |
+
+### Required Config Change
+
+In `~/.cloudflared/config.yml`, add before the catch-all `http_status:404` rule:
+
+```yaml
+- hostname: x402.jameswisdom.ink
+  service: http://localhost:8888
+```
+
+In Cloudflare DNS dashboard: the dashboard will auto-create a CNAME pointing
+`x402.jameswisdom.ink` → `<tunnel-uuid>.cfargotunnel.com`. If using local-managed tunnel, create
+this CNAME manually in Cloudflare DNS (proxied, not DNS-only).
+
+### Astro Config Update Required
+
+Update `SITE_URL` env var or hardcode in `astro.config.mjs`:
+
+```javascript
+site: 'https://x402.jameswisdom.ink',
+```
+
+This affects canonical URLs, sitemaps, and OG image URLs in the built output.
+
+---
+
+## Feature 2: DOCX→PDF Conversion
+
+### Situation
+
+The conversion API already has WeasyPrint (HTML→PDF) and Pillow (images). The previous STACK.md
+recommended LibreOffice headless, noting it adds ~300MB to Docker. The v2.0 task is to research
+lightweight alternatives to LibreOffice.
+
+### The DOCX→PDF Problem
+
+Pure-Python DOCX→PDF conversion with high fidelity does not exist. Every approach involves a
+tradeoff between dependency size, fidelity, and runtime complexity. The candidates in order of
+recommendation:
+
+### Recommended: mammoth + WeasyPrint (two-step pipeline)
 
 | Library | Version | Purpose | Why |
 |---------|---------|---------|-----|
-| `resend` | `^2.x` (latest ~Feb 2026) | Official Resend Python SDK | Type-hinted SDK 2.0; `pip install resend`; simple `resend.Emails.send({...})` API |
+| `mammoth` | `1.12.0` | DOCX → semantic HTML | Pure Python; 0 system dependencies; reads `.docx` ZIP structure directly; active (released March 12, 2026) |
+| `weasyprint` | `>=68.1` (already installed) | HTML → PDF | Already in requirements.txt for HTML→PDF; no new dependency |
 
-### Installation
+**Pipeline:** DOCX → mammoth → HTML → WeasyPrint → PDF
 
+**Fidelity tradeoffs (known, confirmed from mammoth docs):**
+- Text content: preserved
+- Headings, bold, italic, lists, links, footnotes: preserved
+- Table text content: preserved; table borders/styling: stripped
+- Images: preserved inline as data URIs by default
+- Complex Word formatting (columns, text boxes, floating elements): partially lost
+- Custom Word styles: mappable via mammoth's style mapping API
+
+**When this is acceptable:** Document content conversion (reports, articles, contracts where
+structure > pixel-perfect layout). Not suitable for branded PDFs where exact Word visual layout
+must be reproduced.
+
+**Installation:**
 ```bash
-pip install resend
+pip install mammoth
+# weasyprint is already installed
 ```
 
-### Environment Variables
+No Dockerfile changes. No system packages. Docker image stays small.
 
-```bash
-RESEND_API_KEY=re_xxx
-```
+### Alternative: LibreOffice headless (NOT recommended for v2.0)
 
-### Integration
+The previous research recommended this approach. It works and produces high-fidelity output, but
+adds ~300MB to the Railway Docker image and ~5-15 second Railway cold-start penalty. Exclude from
+v2.0 since mammoth + WeasyPrint is sufficient for the stated use case.
+
+| Approach | Fidelity | Docker size cost | System deps | Verdict |
+|----------|----------|-----------------|-------------|---------|
+| mammoth + WeasyPrint | Medium (semantic) | 0 MB (already installed) | None | **Recommended** |
+| LibreOffice headless | High (near-identical) | +300 MB | libreoffice apt package | Defer — overkill for v2.0 |
+| docx2pdf | High (uses LibreOffice) | +300 MB + wrapper overhead | libreoffice apt package | Worse than bare LibreOffice |
+| python-docx alone | Low (text only) | ~1 MB | None | Not suitable for PDF output |
+| unoconv | High (uses LibreOffice) | +300 MB | libreoffice + Python 2 layer | Deprecated, do not use |
+
+### Integration Pattern
 
 ```python
-import resend
+import mammoth
+import weasyprint
+import tempfile
+import os
 
-resend.api_key = os.environ["RESEND_API_KEY"]
-r = resend.Emails.send({
-    "from": "api@x402.network",
-    "to": params["to"],
-    "subject": params["subject"],
-    "html": params["body"],
-})
+def docx_to_pdf(docx_bytes: bytes) -> bytes:
+    """Convert DOCX bytes to PDF bytes via mammoth + WeasyPrint pipeline."""
+    result = mammoth.convert_to_html(io.BytesIO(docx_bytes))
+    html = result.value  # Semantic HTML string
+    # Warnings in result.messages — log but don't fail on them
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_path = os.path.join(tmpdir, "output.pdf")
+        doc = weasyprint.HTML(string=html, url_fetcher=safe_url_fetcher)
+        doc.write_pdf(out_path)
+        with open(out_path, "rb") as f:
+            return f.read()
 ```
 
-Stateless — no domain config state needed if using a verified Resend domain. Price cap: $0.01 per send.
+The `safe_url_fetcher` is already defined in `x402-conversion-api/main.py` for SSRF protection.
+
+### Discriminated Union Addition
+
+Add a new type to `ConvertRequest` in `main.py`:
+
+```python
+class DocxConvertRequest(BaseModel):
+    type: Literal["docx_pdf"]
+    url: BoundedHttpUrl
+```
+
+No new Pydantic imports needed — Literal and BoundedHttpUrl are already used.
 
 ---
 
-## API 3: Web Search (Railway) — Decision Required
+## Feature 3: Multi-Page Site Crawling
 
-This is the only API where the backend provider is undecided. Three candidates: SerpAPI, Brave Search API, Tavily.
+### Situation
 
-### Search Backend Comparison
+The scraping API currently handles single-page scraping (POST /scrape). The new feature adds
+multi-page crawling: given a start URL, crawl all pages within the same domain up to a depth/page
+limit, return structured data per page.
 
-| Factor | SerpAPI | Brave Search | Tavily |
-|--------|---------|--------------|--------|
-| **What it is** | SERP scraper proxy — wraps Google, Bing, 40+ engines | Independent search index, privacy-first, no tracking | AI-native search API — aggregates sources, returns LLM-ready snippets + citations |
-| **Free tier** | 250 searches/month | $5 monthly credits (~1,000 queries); free tier dropped Feb 12, 2026 | 1,000 credits/month, no credit card required |
-| **Pay-as-you-go** | No PAYG — subscription only | $3–$5 CPM ($3–$5 per 1,000 queries) | $0.008/credit ($8 per 1,000 basic searches) |
-| **Subscription cost** | $75/month for 5,000 searches ($15/1k); credits expire monthly | None required — metered billing from $3 CPM | $0.005–$0.0075/credit at scale; no rollover |
-| **Rate limits** | Hourly cap: 20% of plan volume (1,000/hr on $75 plan) | Plan-dependent, not publicly documented | Not publicly documented per tier |
-| **Result quality** | Raw SERP data — Google/Bing rankings, no summarization | Independent index — unbiased from Google/Bing; good freshness | Aggregated + AI-ranked; returns clean snippets, no raw SERP noise |
-| **LLM/agent fit** | Poor — returns raw HTML-ish SERP data; requires your own parsing | Moderate — clean JSON results, but still raw search hits | Best — purpose-built for LLM consumption; returns structured excerpts |
-| **Python SDK** | `google-search-results` (pip) | No official SDK; simple REST GET | `tavily-python` (pip), `>=3.8` |
-| **Dependency risk** | High — depends on Google not blocking; ToS risk | Low — own index, stable | Low — own infrastructure |
-| **Gotcha** | Unused credits don't roll over on any plan; forces over-provisioning | Attribution required for free credits | Credits don't roll over monthly |
-
-### Recommendation: Tavily
-
-**Use Tavily** for the web search API backend.
-
-**Why:**
-1. **LLM-ready output by design.** Tavily returns structured JSON with `title`, `url`, `content` (relevant excerpt), and `score` — exactly what an MCP tool should hand back to an agent. No parsing layer needed.
-2. **Free tier works for development.** 1,000 credits/month, no credit card — lowers barrier to get started and test the API without spend.
-3. **Micropayment alignment.** At $0.008/search PAYG, the x402 markup can be $0.01/search, maintaining the "sub-$0.10" constraint comfortably.
-4. **No subscription trap.** SerpAPI's subscription-only pricing with expiring credits is incompatible with the pay-per-use model — you'd be paying fixed cost regardless of actual x402 API usage.
-5. **Dependency stability.** Uses its own infrastructure, not a wrapper around Google that can break.
-
-**When Brave is better:** If you specifically need a privacy-first, Google-independent index and your users care about unbiased results (e.g., competitive intelligence). The independent index is Brave's genuine differentiator. At $3 CPM it's slightly cheaper than Tavily PAYG at the unit level, but requires attribution and the SDK situation is worse.
-
-**When SerpAPI is better:** If you need Google SERP data specifically (ads, shopping results, local packs) and are willing to pay a subscription. Never for this use case.
-
-### Python Backend Libraries
+### Recommended: crawlee with PlaywrightCrawler
 
 | Library | Version | Purpose | Why |
 |---------|---------|---------|-----|
-| `tavily-python` | `^0.5.x` (latest Feb 2026) | Official Tavily Python SDK | Simple `TavilyClient(api_key=...).search(query)` interface; returns structured JSON |
+| `crawlee[playwright]` | `1.5.0` (released March 6, 2026) | Multi-page crawling with Playwright | Built by Apify; `enqueue_links()` with same-domain strategy; `max_crawl_depth` built in; uses existing Playwright browser |
 
-### Installation
-
+**Installation:**
 ```bash
-pip install tavily-python
+pip install 'crawlee[playwright]'
+# playwright already installed — no separate install needed
 ```
 
-### Environment Variables
-
-```bash
-TAVILY_API_KEY=tvly-xxx
-```
-
-### Integration
+**Key API surface used:**
 
 ```python
-from tavily import TavilyClient
+from crawlee.playwright_crawler import PlaywrightCrawler
 
-client = TavilyClient(api_key=os.environ["TAVILY_API_KEY"])
-results = client.search(
-    query=params["query"],
-    max_results=params.get("max_results", 5),
-    search_depth="basic",  # or "advanced" (2 credits)
+crawler = PlaywrightCrawler(
+    max_crawl_depth=3,       # Stop enqueueing after depth 3
+    max_requests_per_crawl=50,  # Hard cap on total pages
 )
-# Returns: {"results": [{"title": ..., "url": ..., "content": ..., "score": ...}]}
+
+@crawler.router.default_handler
+async def request_handler(context):
+    await context.enqueue_links(strategy='same-domain')  # Same TLD + subdomains only
+    page_html = await context.page.content()
+    # ... extract_content() same as single-page scraper
 ```
+
+**Why crawlee over rolling your own with Playwright + asyncio queue:**
+- `enqueue_links(strategy='same-domain')` handles same-domain filtering automatically
+- `max_crawl_depth` prevents infinite loops without manual depth tracking
+- Request deduplication built in — same URL won't be crawled twice
+- Memory-backed request queue — no Redis needed for this use case
+
+### Important: Playwright Version Compatibility
+
+The scraping API currently pins `playwright==1.44.0`. Crawlee 1.5.0 may require a more recent
+Playwright. Verify compatibility before pinning — or unpin Playwright and let crawlee's dependency
+resolution choose a compatible version.
+
+**Action:** Check crawlee 1.5.0 `setup.cfg` / `pyproject.toml` for its playwright constraint.
+If crawlee requires `playwright>=1.5x`, update the scraping API's pinned playwright version.
+
+### SSRF Integration
+
+The existing `validate_url_for_ssrf()` in `main.py` must be applied to every URL before
+PlaywrightCrawler fetches it. Integrate via a `pre_navigation_hook`:
+
+```python
+@crawler.router.pre_navigation_hook
+async def ssrf_hook(context):
+    try:
+        validate_url_for_ssrf(context.request.url)
+    except ValueError as e:
+        raise Exception(f"SSRF blocked: {e}")
+```
+
+Without this hook, the multi-page crawler would follow links to private IPs, bypassing the
+existing SSRFMiddleware (which only validates the initial `/crawl` request body URL).
+
+### New Endpoint Pattern
+
+```
+POST /crawl   — crawl a site (x402 payment: $0.05 suggested)
+GET /crawl/test  — fixture response
+```
+
+Request model:
+```python
+class CrawlRequest(BaseModel):
+    url: BoundedHttpUrl
+    max_pages: int = Field(default=10, ge=1, le=50)
+    max_depth: int = Field(default=3, ge=1, le=5)
+```
+
+Response: list of per-page extraction results (same schema as `/scrape` per page).
 
 ---
 
-## API 4: File Conversion (Railway)
+## Feature 4: Email Attachments + CC/BCC
 
-Four conversion types: doc-to-pdf, image resize, html-to-pdf, csv-to-json. Each has different library needs.
+### Situation
 
-### Python Backend Libraries
+The email API currently sends `to`, `subject`, `body`, and optional `reply_to`. The Resend SDK
+already supports attachments, CC, and BCC — this is a code-only change, no new libraries.
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `WeasyPrint` | `^68.1` (released Feb 6, 2026) | HTML → PDF | Primary html-to-pdf conversion; pure Python CSS layout engine; no headless browser needed; requires Python >=3.10 |
-| `Pillow` | `^12.1.1` (released Feb 11, 2026) | Image resize, format conversion | All image operations; format conversion (PNG→JPEG, etc.); thumbnail generation; the standard |
-| `python-docx` | `^1.1.2` | Read `.docx` content | For DOCX inspection — but NOT for DOCX-to-PDF conversion (use LibreOffice for that) |
-| `pypdf` | `^4.x` | PDF read/merge | Only if PDF manipulation (merge, split) is needed beyond conversion |
+### Resend SDK Support (Confirmed from Official API Reference)
 
-### DOCX-to-PDF: LibreOffice via subprocess
+| Parameter | Type | Notes |
+|-----------|------|-------|
+| `cc` | `str \| list[str]` | Carbon copy recipients |
+| `bcc` | `str \| list[str]` | Blind carbon copy recipients |
+| `attachments` | `list[dict]` | Max 40MB total after base64 encoding |
+| `attachments[].filename` | `str` | Attachment display name |
+| `attachments[].content` | `buffer \| str` | File content as bytes buffer or base64 string |
+| `attachments[].path` | `str` | Hosted URL — Resend fetches it server-side |
+| `attachments[].content_type` | `str` | MIME type (optional) |
 
-**Do NOT use `python-docx` alone for doc-to-pdf.** It reads DOCX but cannot render to PDF with accurate formatting.
+**Resend SDK version:** `2.23.0` (current, Feb 23, 2026). Already in requirements.txt as
+`resend>=2.0.0,<3.0.0`. No version change needed.
 
-**Use LibreOffice headless via subprocess:**
+### No New Libraries
 
-```python
-import subprocess
-subprocess.run([
-    "libreoffice", "--headless", "--convert-to", "pdf",
-    "--outdir", output_dir, input_path
-], check=True)
-```
+| What | Needed | Why |
+|------|--------|-----|
+| New Python package | No | Resend SDK 2.x already supports all fields |
+| Requirements.txt change | No | Version constraint already covers 2.23.0 |
+| New Railway deploy | No | Code-only change to existing email API |
 
-Railway's Docker image can include LibreOffice:
-```dockerfile
-RUN apt-get install -y libreoffice --no-install-recommends
-```
-
-This is the production-proven approach. Conversion time on Railway: ~1-2 seconds per document.
-
-**Alternative considered: `docx2pdf`** — This is a thin wrapper that calls LibreOffice or Microsoft Word depending on platform. On Linux Railway it calls LibreOffice anyway, so use LibreOffice subprocess directly for control.
-
-**Alternative considered: `unoconv`** — Deprecated; uses the same LibreOffice backend but adds an unstable Python 2 layer. Do not use.
-
-### CSV-to-JSON: stdlib only
+### Pydantic Model Addition
 
 ```python
-import csv, json
+from typing import List, Optional, Union
 
-def csv_to_json(content: str) -> list[dict]:
-    reader = csv.DictReader(content.splitlines())
-    return list(reader)
+class EmailAttachment(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=255)
+    content: str = Field(..., description="Base64-encoded file content")
+    content_type: Optional[str] = Field(None, description="MIME type e.g. application/pdf")
+
+class EmailRequest(BaseModel):
+    to: EmailStr
+    subject: str = Field(..., min_length=1, max_length=998)
+    body: str = Field(..., min_length=1, max_length=102400)
+    reply_to: Optional[EmailStr] = None
+    cc: Optional[Union[EmailStr, List[EmailStr]]] = None    # NEW
+    bcc: Optional[Union[EmailStr, List[EmailStr]]] = None   # NEW
+    attachments: Optional[List[EmailAttachment]] = None     # NEW
 ```
 
-No library needed. Python's `csv.DictReader` handles the conversion. Keep it simple.
+### Security Note
 
-### Installation
+Accept attachments as base64 content strings (not file paths or URLs). This avoids:
+1. SSRF via attachment URL fetch (no outbound fetch from user-supplied URLs)
+2. File system access (no server-side paths exposed)
+3. Content-type spoofing risk is caller's responsibility
 
-```bash
-pip install weasyprint pillow python-docx
-```
-
-Dockerfile addition for LibreOffice:
-```dockerfile
-RUN apt-get update && apt-get install -y libreoffice --no-install-recommends && rm -rf /var/lib/apt/lists/*
-```
-
-### Sizing Note
-
-LibreOffice adds ~300MB to the Railway Docker image. This is the main cost tradeoff — acceptable for a file conversion service.
+Enforce max attachment total size (40MB Resend limit) and count (e.g., max 5 attachments per send).
 
 ---
 
-## API 5: Audio Transcription (Home Server — NOT Railway)
+## Feature 5: Astro + Starlight Docs Expansion
 
-**Critical finding: MLX Whisper does NOT run on Intel Mac (x86_64).**
+### Situation
 
-MLX is Apple's array framework designed exclusively for Apple Silicon (M1/M2/M3/M4). The PyPI package only ships `macosx_*_arm64` wheels. It will not install or run on macOS Monterey x86_64.
+The brand site has docs for the original 3 APIs (screenshot, PDF, crypto sentiment) plus Getting
+Started and Wallet Setup. Need to add docs pages for 5 new v1.1 APIs: scraping, conversion, search,
+email, transcription. This is a content addition — no new technology is needed.
 
-### The Intel Mac Problem
+### Current Versions (Verified)
 
-The home server at 10.0.0.2 is macOS Monterey x86_64. MLX Whisper is not an option. This changes the transcription deployment entirely.
+| Package | Current in package.json | Latest on npm | Action |
+|---------|------------------------|---------------|--------|
+| `@astrojs/starlight` | `^0.37.7` | `0.37.6` (2 days ago) | Already current — `^0.37.7` resolves to latest |
+| `astro` | `^5.18.0` | Check lockfile | Already on Astro 5 |
 
-### Recommended Alternative: faster-whisper
+**No version updates needed.** The `^` ranges in package.json already pull the latest compatible
+releases.
 
-| Library | Version | Purpose | Why |
-|---------|---------|---------|-----|
-| `faster-whisper` | `^1.2.1` (latest 2026) | Audio transcription on CPU | CTranslate2-based reimplementation; 4x faster than `openai-whisper` at same accuracy; explicit x86_64 CPU support via Intel MKL backend; 8-bit quantization reduces memory |
+### Sidebar Config Addition
 
-`faster-whisper` uses CTranslate2 which supports x86_64 via Intel MKL and OpenBLAS. This is the right choice for an Intel Mac server.
+The current sidebar in `astro.config.mjs` has 3 items. After adding 5 API doc pages, restructure:
 
-### Alternative: openai-whisper
-
-`openai-whisper` (version 20250625, released June 2025) also runs on Intel Mac via PyTorch CPU mode. However, it is 4x slower than `faster-whisper` for the same model and accuracy. Use `faster-whisper` unless PyTorch compatibility is specifically needed.
-
-### Installation on Intel Mac
-
-```bash
-pip install faster-whisper
+```javascript
+sidebar: [
+  { label: 'Getting Started', items: [
+    { slug: 'getting-started' },
+    { slug: 'wallet-setup' },
+  ]},
+  { label: 'APIs', items: [
+    { slug: 'api-reference' },          // existing overview
+    { slug: 'api-scraping' },           // NEW
+    { slug: 'api-conversion' },         // NEW
+    { slug: 'api-search' },             // NEW
+    { slug: 'api-email' },              // NEW
+    { slug: 'api-transcription' },      // NEW
+  ]},
+],
 ```
 
-No special flags needed. CTranslate2 wheels for macOS x86_64 are available on PyPI.
-
-### Model Choice for Intel Mac
-
-```python
-from faster_whisper import WhisperModel
-
-# For Intel Mac: use "medium" or "medium.en" for English
-# int8 quantization reduces memory without significant accuracy loss on CPU
-model = WhisperModel("medium.en", device="cpu", compute_type="int8")
-
-segments, info = model.transcribe("audio.mp3", beam_size=5)
-transcript = " ".join([s.text for s in segments])
-```
-
-On Intel Mac CPU, `medium.en` with int8 is the practical sweet spot:
-- `tiny.en` / `base.en` — too fast to matter but noticeably less accurate
-- `large-v3` — too slow on CPU for a responsive API (minutes per minute of audio)
-- `medium.en` + int8 — ~real-time factor of 2-4x on modern Intel i7/i9
-
-### Deployment Pattern
-
-Unlike the Railway services, the transcription API runs directly on the home Mac server via FastAPI + uvicorn, proxied through the existing nginx on port 8888. Same `fastapi-x402` middleware pattern applies — it's still a FastAPI service.
-
-```bash
-uvicorn transcription_api:app --host 0.0.0.0 --port 8001
-```
-
-Nginx proxies `/transcribe` to `:8001`. The MCP server calls `http://10.0.0.2:8888/transcribe` (same nginx gateway as the brand site).
-
-### Audio Format Handling
-
-```bash
-pip install faster-whisper ffmpeg-python
-```
-
-`faster-whisper` uses `ffmpeg` internally — ensure ffmpeg is installed on the Mac server:
-```bash
-brew install ffmpeg
-```
-
-Accept audio URLs (download to temp file, transcribe, delete). Support: mp3, mp4, m4a, wav, ogg, webm.
-
----
-
-## MCP Server Updates (TypeScript)
-
-The MCP server in `src/index.ts` requires no new runtime dependencies. All 5 new APIs follow the existing `apiGet`/`apiPost` helper pattern with `x402-fetch`.
-
-**Changes needed:**
-1. Add 5 new API entries to the `APIS` const object
-2. Add ~2 tools per new API (test + paid mode)
-3. Update `package.json` version to `1.1.0`
-4. Update `description` and `keywords` fields
-
-No new npm packages required in the MCP server itself.
+No Astro or Starlight config API changes — this is Starlight's standard sidebar array structure
+(unchanged in 0.37.x).
 
 ---
 
@@ -308,33 +373,51 @@ No new npm packages required in the MCP server itself.
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `mlx-whisper` | Apple Silicon only; will not install on macOS x86_64 | `faster-whisper` — explicit x86_64 CPU support via CTranslate2 |
-| `openai-whisper` (for production) | 4x slower than faster-whisper at same accuracy on CPU | `faster-whisper ^1.2.1` |
-| `PyPDF2` | Deprecated; no longer maintained | `pypdf` (successor project by same maintainers) |
-| `unoconv` | Deprecated Python 2 wrapper around LibreOffice; unreliable on modern systems | LibreOffice `--headless` subprocess directly |
-| `docx2pdf` | Just wraps LibreOffice anyway on Linux; adds unnecessary abstraction | LibreOffice subprocess directly |
-| SerpAPI | Subscription-only with expiring credits; incompatible with pay-per-use model; 4x more expensive at volume | Tavily |
-| `@x402/fetch` (scoped) | Non-functional stub package — confirmed gotcha from v1.0 | `x402-fetch` (non-scoped, already in use) |
-| `cheerio` (npm) | Not applicable — backend is Python/FastAPI, not Node.js | `beautifulsoup4` + `lxml` |
-| Playwright MCP / Puppeteer MCP | For the Python Railway backend, use `playwright` Python package | `playwright` (Python, PyPI) |
+| LibreOffice headless for DOCX→PDF | +300MB Docker image; Railway cold start penalty; overkill for v2.0 | mammoth + WeasyPrint (already installed) |
+| unoconv | Deprecated Python 2 wrapper around LibreOffice; version mismatch errors | mammoth + WeasyPrint |
+| docx2pdf | Just wraps LibreOffice on Linux; adds abstraction without benefit | mammoth directly |
+| Let's Encrypt / certbot on home server | No need — Cloudflare Tunnel handles TLS at edge | Cloudflare Tunnel ingress rule |
+| New Cloudflare Tunnel | Existing tunnel already works; adding ingress rules is simpler | Edit `~/.cloudflared/config.yml` |
+| Scrapy for crawling | Heavy framework; requires Scrapy project structure; overkill for a single API endpoint | crawlee `PlaywrightCrawler` |
+| BeautifulSoup alone for crawling | No built-in link queue, deduplication, or depth tracking | crawlee `PlaywrightCrawler` |
+| Accepting attachment file paths or URLs | SSRF and file access risks | Base64 content strings only |
+| Playwright MCP version in requirements.txt | Version-pinning may conflict with crawlee's playwright dep | Use `>=` constraint or let crawlee manage it |
 
 ---
 
-## Stack Patterns by API Host
+## Installation Summary (New Packages Only)
 
-**Railway services (Web Scraping, Email, Search, File Conversion):**
-- Same FastAPI + `fastapi-x402` pattern as screenshot/PDF APIs
-- Python 3.11+ (Railway default)
-- `requirements.txt` per service
-- Dockerfile only if extra system deps needed (LibreOffice for file conversion)
-- Free test endpoint at `/test/<endpoint>` with safe input restrictions
+### x402-scraping-api/requirements.txt additions
 
-**Home server (Transcription):**
-- FastAPI + `fastapi-x402` — same middleware pattern, different host
-- Python 3.11+ (install via pyenv on Mac)
-- Service: uvicorn on :8001, nginx proxy on :8888
-- `faster-whisper` model loaded at startup (not per-request)
-- Model warm-up on first request (5-15 seconds cold start) — acceptable for a home server
+```
+crawlee[playwright]>=1.5.0
+```
+
+Note: `playwright==1.44.0` may need to be relaxed to `playwright>=1.44.0` depending on crawlee's
+internal constraint. Verify against crawlee's setup before pinning.
+
+### x402-conversion-api/requirements.txt additions
+
+```
+mammoth>=1.12.0
+```
+
+WeasyPrint is already installed. No Dockerfile changes.
+
+### x402-email-api/requirements.txt
+
+No changes. `resend>=2.0.0,<3.0.0` already covers 2.23.0.
+
+### Site (npm)
+
+No changes. `@astrojs/starlight ^0.37.7` and `astro ^5.18.0` are already current.
+
+### Infrastructure (no packages)
+
+- Edit `~/.cloudflared/config.yml`: add 1 ingress rule
+- Add DNS CNAME in Cloudflare dashboard
+- Update `SITE_URL` env var / `astro.config.mjs`
+- Restart cloudflared launchd service
 
 ---
 
@@ -342,12 +425,10 @@ No new npm packages required in the MCP server itself.
 
 | Package | Compatible With | Notes |
 |---------|-----------------|-------|
-| `WeasyPrint ^68.1` | Python >=3.10 | Dropped Python 3.9 — use Railway Python 3.11+ |
-| `faster-whisper ^1.2.1` | Python >=3.8, macOS x86_64 | CTranslate2 has x86_64 wheels; no ARM-only restriction |
-| `playwright ^1.58.0` (Python) | Python >=3.9 | Requires `playwright install chromium` post-install; add to Railway Dockerfile or Procfile |
-| `Pillow ^12.1.1` | Python >=3.9 | No breaking changes from 10.x for resize/format operations |
-| `tavily-python` | Python >=3.8 | Simple REST wrapper; no version conflicts expected |
-| `resend ^2.x` | Python >=3.7 | SDK 2.0 has type hints; use `resend.Emails.send({...})` pattern |
+| `mammoth>=1.12.0` | Python >=3.7, WeasyPrint >=68.1 | No known conflicts; pure Python XML parser |
+| `crawlee[playwright]>=1.5.0` | Python >=3.9 | Requires playwright; verify crawlee's minimum playwright version vs pinned `==1.44.0` |
+| `resend>=2.0.0,<3.0.0` | Python >=3.7 | SDK 2.23.0 is current; attachment content must be bytes or base64 string (not file path) |
+| `@astrojs/starlight ^0.37.7` | astro ^5.18.0 | No breaking changes in 0.37.x minor range |
 
 ---
 
@@ -355,90 +436,25 @@ No new npm packages required in the MCP server itself.
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| `faster-whisper` | `openai-whisper` | When you need PyTorch ecosystem compatibility or are testing on Apple Silicon where MLX is available |
-| `WeasyPrint` | Playwright HTML→PDF | When pixel-perfect CSS/JS rendering is needed (WeasyPrint doesn't run JS); Playwright is heavier but handles JS-rendered pages |
-| Tavily | Brave Search API | When you need a Google/Bing-independent index and your users value privacy-first results; attribution required |
-| Tavily | SerpAPI | When you specifically need raw Google SERP data (ads, shopping boxes, local results) — never for agent/LLM use case |
-| LibreOffice subprocess | `python-docx` + `reportlab` | When you can't add 300MB to the Docker image; limited to simple documents only |
-| BeautifulSoup4 + lxml | `html5lib` parser | When strict HTML5 spec conformance is more important than speed; slower but more tolerant of malformed HTML |
-
----
-
-## Full Installation Summary
-
-### Per Railway Service
-
-**Web Scraping API (`requirements.txt`):**
-```
-fastapi
-fastapi-x402
-uvicorn[standard]
-playwright==1.58.0
-beautifulsoup4>=4.12.3
-lxml>=5.3.0
-```
-Post-install: `playwright install chromium --with-deps`
-
-**Email Sending API (`requirements.txt`):**
-```
-fastapi
-fastapi-x402
-uvicorn[standard]
-resend>=2.0.0
-```
-
-**Web Search API (`requirements.txt`):**
-```
-fastapi
-fastapi-x402
-uvicorn[standard]
-tavily-python>=0.5.0
-```
-
-**File Conversion API (`requirements.txt` + Dockerfile):**
-```
-fastapi
-fastapi-x402
-uvicorn[standard]
-weasyprint>=68.1
-Pillow>=12.1.1
-python-docx>=1.1.2
-```
-```dockerfile
-RUN apt-get update && apt-get install -y libreoffice --no-install-recommends && rm -rf /var/lib/apt/lists/*
-```
-
-### Home Server (Transcription)
-
-```bash
-pip install faster-whisper fastapi fastapi-x402 uvicorn ffmpeg-python
-brew install ffmpeg  # system dependency
-```
-
-### MCP Server (TypeScript) — No New Dependencies
-
-```bash
-# No changes to package.json dependencies
-# Only src/index.ts additions and version bump to 1.1.0
-```
+| mammoth + WeasyPrint | LibreOffice headless | When document pixel-fidelity is required (branded PDF reports, complex layouts with columns/text boxes) |
+| crawlee PlaywrightCrawler | Custom asyncio queue | When you have very specific crawl behavior not covered by crawlee's API — unlikely for this use case |
+| Cloudflare Tunnel ingress rule | New Cloudflare Pages deploy | When you want a fully managed CDN with edge caching; adds deployment complexity vs. existing tunnel |
+| Base64 attachment content | Attachment URL fetch | When file size limit is not a concern and you want callers to avoid base64 overhead — not recommended due to SSRF risk |
 
 ---
 
 ## Sources
 
-- [pypi.org/project/faster-whisper](https://pypi.org/project/faster-whisper/) — v1.2.1 confirmed, CTranslate2 x86_64 support verified
-- [github.com/ml-explore/mlx](https://github.com/ml-explore/mlx) — Apple Silicon only, arm64 wheels only, confirmed no x86_64 support
-- [pypi.org/project/weasyprint](https://pypi.org/project/weasyprint/) — v68.1 released Feb 6, 2026; Python >=3.10 required
-- [pypi.org/project/pillow](https://pypi.org/project/pillow/) — v12.1.1 released Feb 11, 2026
-- [pypi.org/project/tavily-python](https://pypi.org/project/tavily-python/) — confirmed latest Feb 2026; `pip install tavily-python`
-- [pypi.org/project/resend](https://pypi.org/project/resend/) — SDK 2.0, Feb 2026; type hints, Python >=3.7
-- [pypi.org/project/playwright](https://pypi.org/project/playwright/) — v1.58.0, released Jan 30, 2026; Python >=3.9
-- [docs.tavily.com/documentation/api-credits](https://docs.tavily.com/documentation/api-credits) — 1,000 free credits/month; $0.008/credit PAYG
-- [brave.com/search/api](https://brave.com/search/api/) — $3-$5 CPM; free tier dropped Feb 12, 2026; $5 monthly credits now
-- [serpapi.com/pricing](https://serpapi.com/pricing) — $75/month for 5,000 searches; credits expire; no PAYG
-- [implicator.ai/brave-drops-free-search-api-tier](https://www.implicator.ai/brave-drops-free-search-api-tier-puts-all-developers-on-metered-billing/) — Brave free tier removal confirmed
-- [dev.to/ritza/best-serp-api-comparison-2025](https://dev.to/ritza/best-serp-api-comparison-2025-serpapi-vs-exa-vs-tavily-vs-scrapingdog-vs-scrapingbee-2jci) — comparative analysis
+- [pypi.org/project/crawlee](https://pypi.org/project/crawlee/) — v1.5.0, March 6, 2026; `pip install 'crawlee[playwright]'` confirmed
+- [crawlee.dev/python/docs/examples/playwright-crawler](https://crawlee.dev/python/docs/examples/playwright-crawler) — PlaywrightCrawler example, enqueue_links, same-domain strategy
+- [crawlee.dev/python/api/class/EnqueueLinksFunction](https://crawlee.dev/python/api/class/EnqueueLinksFunction) — strategy parameter, max_crawl_depth on crawler class
+- [pypi.org/project/mammoth](https://pypi.org/project/mammoth/) — v1.12.0, March 12, 2026; Python >=3.7; tables/images supported; table borders stripped
+- [github.com/mwilliamson/python-mammoth](https://github.com/mwilliamson/python-mammoth) — limitations confirmed: formatting ignored, semantic structure preserved
+- [resend.com/docs/api-reference/emails/send-email](https://resend.com/docs/api-reference/emails/send-email) — attachments (content: buffer|string, filename, path, content_type, content_id); cc/bcc: string|string[]; 40MB max
+- [github.com/resend/resend-python](https://github.com/resend/resend-python) — v2.23.0, Feb 23, 2026; cc/bcc/attachments confirmed in README examples
+- [developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/dns](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/routing-to-tunnel/dns/) — CNAME auto-created; SSL handled by Cloudflare edge; multiple ingress rules on single tunnel
+- [npmjs.com/package/@astrojs/starlight](https://www.npmjs.com/package/@astrojs/starlight) — 0.37.6 latest (2 days ago); already at current version
 
 ---
-*Stack research for: x402 API Network — v1.1 Universal Utility APIs (5 new backends)*
-*Researched: 2026-03-12*
+*Stack research for: x402 API Network — v2.0 Site Launch & Platform Polish*
+*Researched: 2026-03-15*
