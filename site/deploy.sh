@@ -7,7 +7,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER="jameswisdom@10.0.0.2"
 REMOTE_DIR="/var/www/x402-network/"
-BASE_URL="http://10.0.0.2:8888"
+BASE_URL="https://usebismuth.com"
 
 # ── Build ────────────────────────────────────────────────────────────────────
 echo "==> Building site (SITE_URL=$BASE_URL)..."
@@ -48,12 +48,12 @@ smoke_check() {
     echo "PASS: $url → HTTP $got"
 }
 
-# Page availability
-smoke_check "$BASE_URL/"                 200
-smoke_check "$BASE_URL/pricing"          200
-smoke_check "$BASE_URL/getting-started"  200
-smoke_check "$BASE_URL/api-reference"    200
-smoke_check "$BASE_URL/wallet-setup"     200
+# Page availability (use trailing slashes — nginx redirects non-slash paths to slash paths)
+smoke_check "$BASE_URL/"                  200
+smoke_check "$BASE_URL/pricing/"          200
+smoke_check "$BASE_URL/getting-started/"  200
+smoke_check "$BASE_URL/api-reference/"    200
+smoke_check "$BASE_URL/wallet-setup/"     200
 
 # Security: dotfile paths must return 404
 smoke_check "$BASE_URL/.planning/"       404
@@ -67,15 +67,15 @@ if [[ "$OG_COUNT" -eq 0 ]]; then
 fi
 echo "PASS: og:image meta tag present in homepage HTML"
 
-# OG image URL must NOT be the placeholder
-OG_PLACEHOLDER=$(curl -s --max-time 10 "$BASE_URL/" | grep -c 'x402.todo' || true)
+# OG image URL must NOT be the placeholder or old local IP
+OG_PLACEHOLDER=$(curl -s --max-time 10 "$BASE_URL/" | grep -cE 'x402\.todo|10\.0\.0\.2' || true)
 if [[ "$OG_PLACEHOLDER" -gt 0 ]]; then
-    echo "FAIL: placeholder URL 'x402.todo' found in homepage — SITE_URL was not set during build"
+    echo "FAIL: placeholder URL 'x402.todo' or old IP '10.0.0.2' found in homepage — SITE_URL was not set during build"
     exit 1
 fi
-echo "PASS: og:image URL is not the x402.todo placeholder"
+echo "PASS: og:image URL is not a placeholder or old local IP"
 
 # ── Done ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "All smoke tests passed."
-echo "x402 brand site is live at $BASE_URL"
+echo "Bismuth brand site is live at $BASE_URL"
