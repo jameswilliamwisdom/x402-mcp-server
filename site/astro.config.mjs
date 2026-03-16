@@ -5,12 +5,12 @@ export default defineConfig({
   output: 'static',  // explicit — don't rely on default (DEPLOY-01)
 
   // Use env var — must be set to real URL before Phase 4 deploy
-  site: process.env.SITE_URL || 'https://x402.todo',
+  site: process.env.SITE_URL || 'https://usebismuth.com',
 
   integrations: [
     starlight({
-      title: 'x402',
-      description: 'The API marketplace for the AI agent economy.',
+      title: 'Bismuth',
+      description: 'Pay-per-use APIs for AI agents. No API key required — pay per call with USDC on Base.',
 
       // Dark mode only — no toggle (FOLIOM prevention)
       components: {
@@ -48,7 +48,7 @@ export default defineConfig({
         // Global OG fallback (per-page overrides via frontmatter head field)
         {
           tag: 'meta',
-          attrs: { property: 'og:image', content: `${process.env.SITE_URL || 'https://x402.todo'}/og-image.png` },
+          attrs: { property: 'og:image', content: `${process.env.SITE_URL || 'https://usebismuth.com'}/og-image.png` },
         },
         {
           tag: 'meta',
