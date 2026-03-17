@@ -1,6 +1,6 @@
 """
 x402 Conversion API
-Convert files via URL: image resize/reformat (Pillow), CSV-to-JSON (stdlib), HTML-to-PDF (WeasyPrint).
+Convert files via URL: image resize/reformat (Pillow), CSV-to-JSON (stdlib), HTML-to-PDF (WeasyPrint), DOCX-to-PDF (mammoth + WeasyPrint).
 All operations gated behind x402 USDC micropayment. SSRF-protected streaming download pipeline.
 """
 
@@ -285,13 +285,61 @@ def sync_html_to_pdf(file_bytes: bytes, source_url: str) -> bytes:
             return f.read()
 
 
+def sync_docx_to_pdf(file_bytes: bytes) -> bytes:
+    """Convert DOCX bytes to PDF bytes via mammoth + WeasyPrint.
+
+    Pipeline: DOCX bytes -> HTML fragment (mammoth) -> full HTML document -> PDF (WeasyPrint).
+    Images are embedded as base64 data URIs by mammoth — no external URL fetches occur.
+    Sync — must be called via run_in_threadpool.
+    """
+    import mammoth
+    import zipfile
+
+    try:
+        result = mammoth.convert_to_html(BytesIO(file_bytes))
+    except zipfile.BadZipFile:
+        raise ValueError("Not a valid DOCX file (invalid ZIP archive)")
+    except KeyError:
+        raise ValueError("Not a valid DOCX file (missing internal document structure)")
+
+    # Log non-fatal conversion warnings (dropped WMF images, unrecognized styles, etc.)
+    for msg in result.messages:
+        logger.warning("mammoth: %s", msg)
+
+    # Wrap HTML fragment in full document with baseline CSS
+    # Required: mammoth produces no CSS; without this WeasyPrint renders plain text with no layout
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<style>
+@page {{ size: A4; margin: 2cm; }}
+body {{ font-family: "Liberation Sans", sans-serif; font-size: 11pt; line-height: 1.4; }}
+table {{ width: 100%; border-collapse: collapse; }}
+td, th {{ border: 1px solid #ccc; padding: 4px 8px; }}
+h1, h2, h3, h4, h5, h6 {{ margin-top: 1em; margin-bottom: 0.4em; }}
+p {{ margin: 0.4em 0; }}
+</style>
+</head>
+<body>{result.value}</body>
+</html>"""
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        out_path = os.path.join(tmpdir, "output.pdf")
+        weasyprint.HTML(
+            string=html,
+            url_fetcher=safe_url_fetcher,
+        ).write_pdf(out_path)
+        with open(out_path, "rb") as f:
+            return f.read()
+
+
 # =============================================================================
 # FastAPI App + Middleware
 # =============================================================================
 
 app = FastAPI(
     title="x402 Conversion API",
-    description="Convert files: image resize/reformat, CSV→JSON, HTML→PDF. Powered by x402 USDC payment.",
+    description="Convert files: image resize/reformat, CSV→JSON, HTML→PDF, DOCX→PDF. Powered by x402 USDC payment.",
     version="1.0.0",
 )
 
@@ -383,8 +431,13 @@ class HtmlConvertRequest(BaseModel):
     url: BoundedHttpUrl
 
 
+class DocxConvertRequest(BaseModel):
+    type: Literal["docx"]
+    url: BoundedHttpUrl
+
+
 ConvertRequest = Annotated[
-    Union[ImageConvertRequest, CsvConvertRequest, HtmlConvertRequest],
+    Union[ImageConvertRequest, CsvConvertRequest, HtmlConvertRequest, DocxConvertRequest],
     Field(discriminator="type"),
 ]
 
@@ -406,7 +459,7 @@ async def info():
         "service": "x402-conversion-api",
         "price": "$0.02",
         "test": "/convert/test",
-        "description": "Convert files: image resize/reformat, CSV→JSON, HTML→PDF",
+        "description": "Convert files: image resize/reformat, CSV→JSON, HTML→PDF, DOCX→PDF",
         "endpoints": {
             "POST /convert": "Convert a file (requires x402 USDC payment: $0.02)",
             "GET /convert/test": "Free fixture response",
@@ -441,6 +494,7 @@ async def convert(request: Request, body: ConvertRequest):
     - type: "image" — resize/reformat (PNG, JPEG, WEBP, GIF). Optional: format, width, height.
     - type: "csv" — CSV-to-JSON using stdlib DictReader with auto-detected delimiter.
     - type: "html_pdf" — HTML-to-PDF via WeasyPrint.
+    - type: "docx" — DOCX-to-PDF via mammoth + WeasyPrint (content-document fidelity, not layout-preserving).
 
     Returns base64-encoded output with mime_type. Input URL must be public (no private IPs).
     Source file must be ≤10MB; output must be ≤8MB before base64 encoding.
@@ -491,6 +545,9 @@ async def convert(request: Request, body: ConvertRequest):
             mime_type = "application/json"
         elif body.type == "html_pdf":
             output_bytes = await run_in_threadpool(sync_html_to_pdf, file_bytes, source_url)
+            mime_type = "application/pdf"
+        elif body.type == "docx":
+            output_bytes = await run_in_threadpool(sync_docx_to_pdf, file_bytes)
             mime_type = "application/pdf"
     except Exception as e:
         return {
