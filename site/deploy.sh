@@ -54,6 +54,11 @@ smoke_check "$BASE_URL/pricing/"          200
 smoke_check "$BASE_URL/getting-started/"  200
 smoke_check "$BASE_URL/api-reference/"    200
 smoke_check "$BASE_URL/wallet-setup/"     200
+smoke_check "$BASE_URL/apis/scraping/"           200
+smoke_check "$BASE_URL/apis/file-conversion/"    200
+smoke_check "$BASE_URL/apis/web-search/"         200
+smoke_check "$BASE_URL/apis/email/"              200
+smoke_check "$BASE_URL/apis/audio-transcription/" 200
 
 # Security: dotfile paths must return 404
 smoke_check "$BASE_URL/.planning/"       404
