@@ -591,13 +591,14 @@ Returns: markdown text, extracted links, tables, images, page metadata, and succ
 
 server.tool(
   "x402_convert_file",
-  `Convert files between formats — image resize/reformat, CSV to JSON, or HTML to PDF.
+  `Convert files between formats — image resize/reformat, CSV to JSON, HTML to PDF, or DOCX to PDF.
 Price: $0.02 USDC per conversion (paid mode) | Free test: returns fixture data.
 
 Supported conversions:
 - image: resize/reformat an image from a URL (Pillow) — outputs base64-encoded bytes
 - csv: convert a CSV URL to JSON array
 - html_pdf: render HTML from a URL to PDF — outputs base64-encoded bytes
+- docx: convert a DOCX document URL to PDF — outputs base64-encoded bytes (mammoth + WeasyPrint, content-fidelity not layout-preserving)
 
 Input limit: 10MB source file. Output limit: 8MB (before base64 encoding).
 Without X402_PRIVATE_KEY, only the free test endpoint is available.
@@ -605,8 +606,8 @@ Without X402_PRIVATE_KEY, only the free test endpoint is available.
 Returns: base64-encoded output bytes with MIME type, or JSON array for csv type.`,
   {
     url: z.string().url().describe("URL of the file to convert (public, http/https, max 10MB)"),
-    type: z.enum(["image", "csv", "html_pdf"])
-      .describe("Conversion type: image (resize/reformat), csv (CSV to JSON), html_pdf (HTML to PDF)"),
+    type: z.enum(["image", "csv", "html_pdf", "docx"])
+      .describe("Conversion type: image (resize/reformat), csv (CSV to JSON), html_pdf (HTML to PDF), docx (DOCX to PDF)"),
     format: z.enum(["jpeg", "png", "webp", "gif"]).optional()
       .describe("Output image format (only for type='image', default: jpeg)"),
     width: z.number().int().min(1).max(8000).optional()
