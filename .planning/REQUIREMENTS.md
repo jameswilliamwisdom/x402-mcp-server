@@ -31,8 +31,8 @@ Requirements for v2.0 Bismuth Launch. Each maps to roadmap phases.
 
 ### Document Conversion
 
-- [ ] **CONV-01**: User can convert DOCX to PDF via x402_convert_file tool (type: "docx")
-- [ ] **CONV-02**: DOCX conversion preserves text, headings, tables, and images (semantic fidelity)
+- [x] **CONV-01**: User can convert DOCX to PDF via x402_convert_file tool (type: "docx")
+- [x] **CONV-02**: DOCX conversion preserves text, headings, tables, and images (semantic fidelity)
 - [ ] **CONV-03**: Conversion API docs explicitly note "content-document conversion" — not layout-preserving
 
 ### Shallow Crawl
@@ -109,8 +109,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EMAIL-02 | Phase 13 | Complete |
 | EMAIL-03 | Phase 13 | Complete |
 | EMAIL-04 | Phase 13 | Complete |
-| CONV-01 | Phase 14 | Pending |
-| CONV-02 | Phase 14 | Pending |
+| CONV-01 | Phase 14 | Complete |
+| CONV-02 | Phase 14 | Complete |
 | CONV-03 | Phase 14 | Pending |
 | CRAWL-01 | Phase 15 | Pending |
 | CRAWL-02 | Phase 15 | Pending |
