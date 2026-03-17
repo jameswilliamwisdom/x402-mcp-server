@@ -71,6 +71,16 @@ export default defineConfig({
             { slug: 'api-reference' },
           ],
         },
+        {
+          label: 'APIs',
+          items: [
+            { slug: 'apis/scraping' },
+            { slug: 'apis/file-conversion' },
+            { slug: 'apis/web-search' },
+            { slug: 'apis/email' },
+            { slug: 'apis/audio-transcription' },
+          ],
+        },
       ],
 
       favicon: '/logo-mark.png',
