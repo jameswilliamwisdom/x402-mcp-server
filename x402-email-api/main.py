@@ -233,6 +233,32 @@ def build_send_params(body: EmailRequest) -> dict:
     if body.reply_to:
         params["reply_to"] = str(body.reply_to)
 
+    # CC recipients
+    if body.cc:
+        params["cc"] = [str(addr) for addr in body.cc]
+
+    # BCC recipients
+    if body.bcc:
+        params["bcc"] = [str(addr) for addr in body.bcc]
+
+    # Attachments — pass base64 string directly to Resend SDK
+    if body.attachments:
+        resend_attachments = []
+        for att in body.attachments:
+            attachment: resend.Attachment = {
+                "filename": att.filename,
+                "content": att.content,  # base64 str — SDK accepts Union[List[int], str]
+            }
+            # Auto-derive content_type from filename if caller omitted it
+            if att.content_type:
+                attachment["content_type"] = att.content_type
+            else:
+                guessed, _ = mimetypes.guess_type(att.filename)
+                if guessed:
+                    attachment["content_type"] = guessed
+            resend_attachments.append(attachment)
+        params["attachments"] = resend_attachments
+
     return params
 
 
@@ -362,7 +388,14 @@ def send_email(request: Request, body: EmailRequest):
     """
     wallet = get_wallet_address(request)
     check_and_increment_wallet_limit(wallet)
-    check_and_increment_domain_limit(wallet, str(body.to))
+    # Rate-limit all recipients — to + cc + bcc (Pitfall #4: CC/BCC bypass)
+    all_recipients = [str(body.to)]
+    if body.cc:
+        all_recipients.extend(str(addr) for addr in body.cc)
+    if body.bcc:
+        all_recipients.extend(str(addr) for addr in body.bcc)
+    for recipient in all_recipients:
+        check_and_increment_domain_limit(wallet, recipient)
     result = _do_send(body)
     log_send_event(
         wallet or "unknown",
