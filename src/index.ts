@@ -477,7 +477,8 @@ server.tool(
   `Send a transactional email via Resend.
 Price: $0.01 USDC per email (paid mode) | Free test: returns fixture data.
 
-Supports plain text or HTML body. Per-wallet daily limit: 10 emails. Per-domain daily limit: 5 emails.
+Supports plain text or HTML body, CC/BCC recipients, and file attachments (base64-encoded, max 25MB per file).
+Per-wallet daily limit: 10 emails. Per-domain daily limit: 5 emails (applies to all recipients including CC/BCC).
 Without X402_PRIVATE_KEY, only the free test endpoint is available.
 
 Returns: message_id from Resend.`,
@@ -498,6 +499,16 @@ Returns: message_id from Resend.`,
       .email()
       .optional()
       .describe("Optional reply-to address"),
+    cc: z.array(z.string().email()).optional()
+        .describe("CC recipients — list of email addresses"),
+    bcc: z.array(z.string().email()).optional()
+        .describe("BCC recipients — list of email addresses"),
+    attachments: z.array(z.object({
+        filename: z.string().describe("Filename including extension (e.g. 'report.pdf')"),
+        content: z.string().describe("Base64-encoded file content (max 25MB decoded)"),
+        content_type: z.string().optional()
+            .describe("MIME type — auto-derived from filename if omitted"),
+    })).optional().describe("File attachments (base64-encoded, max 25MB pre-encoding per file)"),
   },
   async (params) => {
     const base = APIS.email.baseUrl;
@@ -512,6 +523,9 @@ Returns: message_id from Resend.`,
           body: params.body,
         };
         if (params.reply_to) payload.reply_to = params.reply_to;
+        if (params.cc) payload.cc = params.cc;
+        if (params.bcc) payload.bcc = params.bcc;
+        if (params.attachments) payload.attachments = params.attachments;
 
         const data = await apiPost(base, "/send", payload, true);
         return textResult({
