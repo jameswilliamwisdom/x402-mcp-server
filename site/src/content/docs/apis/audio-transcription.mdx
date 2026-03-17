@@ -1,0 +1,107 @@
+---
+title: Audio Transcription API
+description: Transcribe audio files with optional word-level timestamps. $0.05 USDC per call.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+{/* SYNC: price must match src/index.ts @pay() decorator and PricingTable.astro */}
+
+Transcribe audio files from a public URL using the Bismuth Audio Transcription API. Returns full transcription text with segment-level or word-level timestamps, charged at $0.05 USDC per call.
+
+## Endpoints
+
+**Free test endpoint:** `GET /transcribe/test` at `https://transcribe.jameswisdom.ink` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /transcribe` — $0.05 USDC on Base per call.
+
+<Aside type="tip" title="No API key required">
+Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically
+settles $0.05 USDC on Base. Use the free test endpoint to confirm the response schema
+before enabling payments.
+</Aside>
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `url` | string | Yes | — | Audio file URL (http/https, public, max 25 MB, max 10 minutes) |
+| `language` | string | No | — | ISO 639-1 language hint (e.g., `"en"`) — omit for auto-detect |
+| `word_timestamps` | boolean | No | `false` | `true` for word-level timing, `false` for segment-level |
+
+## Example — curl
+
+```bash
+# Free test (no wallet required)
+curl https://transcribe.jameswisdom.ink/transcribe/test
+
+# Paid call (requires x402-fetch or x402-mcp-server — handles X-Payment header automatically)
+curl -X POST https://transcribe.jameswisdom.ink/transcribe \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/meeting.mp3", "language": "en"}'
+```
+
+## Example — MCP Tool Call
+
+> "Transcribe this audio recording and include word-level timestamps: https://example.com/interview.wav"
+
+```json
+{
+  "tool": "x402_transcribe_audio",
+  "arguments": {
+    "url": "https://example.com/interview.wav",
+    "word_timestamps": true
+  }
+}
+```
+
+## Returns
+
+The response schema branches based on `word_timestamps`. The `segments` and `timestamps` fields are mutually exclusive — only one appears per response.
+
+**When `word_timestamps: false` (default) — segment-level output:**
+
+```json
+{
+  "text": "Full transcription text...",
+  "segments": [
+    {"start": 0.0, "end": 2.5, "text": "First sentence."},
+    {"start": 2.5, "end": 5.1, "text": "Second sentence."}
+  ],
+  "language": "en",
+  "duration": 120.5
+}
+```
+
+**When `word_timestamps: true` — word-level output:**
+
+```json
+{
+  "text": "Full transcription text...",
+  "timestamps": [
+    {"word": "First", "start": 0.0, "end": 0.3},
+    {"word": "sentence", "start": 0.3, "end": 0.8}
+  ],
+  "language": "en",
+  "duration": 120.5
+}
+```
+
+## Hard Limits
+
+Files exceeding the 25 MB size limit are rejected before download (no charge). Files exceeding the 10-minute duration limit are rejected after download — the charge applies.
+
+<Aside type="caution">
+Payment is charged when the audio file is downloaded, before the duration check. Audio files exceeding the 10-minute limit will still incur the $0.05 charge. The x402 protocol has no refund mechanism. Check your file duration before submitting.
+</Aside>
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| 400 | SSRF blocked — URL targets a private/reserved IP range |
+| 402 | Payment required — x402 handshake (handled automatically by MCP server) |
+| 413 | File exceeds 25 MB size limit |
+| 422 | Download failed, audio format unreadable, or duration exceeds 10 minutes |
+| 429 | Free test rate limit exceeded (100/hour per IP) |
+| 500 | Transcription model error |
+| 503 | Transcription model not loaded or temporarily unavailable |
