@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Smoke test: catches missing system libs at build time (not first request)
 # WeasyPrint lazy-loads libgobject, libcairo, libpango at first write_pdf() call.
 # Without this, docker build succeeds but first POST /convert crashes.
-RUN python -c "from weasyprint import HTML; HTML(string='<p>test</p>').write_pdf()"
+RUN python -c "from weasyprint import HTML; HTML(string='<p>test</p>').write_pdf(); import mammoth; print('ok')"
 
 COPY main.py .
 COPY fixture.json .
