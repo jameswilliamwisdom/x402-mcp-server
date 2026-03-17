@@ -1,0 +1,94 @@
+---
+title: Email Sending API
+description: Send transactional emails with HTML support. $0.01 USDC per call.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+{/* SYNC: price must match src/index.ts @pay() decorator and PricingTable.astro */}
+
+Send transactional emails with HTML or plain text content via the Bismuth Email Sending API. Emails are delivered using Resend and charged at $0.01 USDC per call.
+
+## Endpoints
+
+**Free test endpoint:** `GET /send/test` at `https://x402-email-api-production.up.railway.app` — returns fixture data, no real email sent, no wallet required.
+**Paid endpoint:** `POST /send` — $0.01 USDC on Base per call.
+
+<Aside type="tip" title="No API key required">
+Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically
+settles $0.01 USDC on Base. Use the free test endpoint to confirm the response schema
+before enabling payments.
+</Aside>
+
+<Aside type="note">
+All emails are sent from `x402 Email API <noreply@jameswisdom.ink>`. The From address cannot be overridden. Use the `reply_to` field so recipients can respond to your address.
+</Aside>
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `to` | string | Yes | — | Recipient email address |
+| `subject` | string | Yes | — | Email subject (max 998 characters, RFC 5321) |
+| `body` | string | Yes | — | Email body — HTML or plain text (max 100 KB); HTML auto-detected |
+| `reply_to` | string | No | — | Reply-to address for recipient responses |
+
+## Example — curl
+
+```bash
+# Free test (no wallet required — no real email sent)
+curl https://x402-email-api-production.up.railway.app/send/test
+
+# Paid call (requires x402-fetch or x402-mcp-server — handles X-Payment header automatically)
+curl -X POST https://x402-email-api-production.up.railway.app/send \
+  -H "Content-Type: application/json" \
+  -d '{"to": "user@example.com", "subject": "Hello from Bismuth", "body": "<h1>Hello</h1><p>Sent via Bismuth email API.</p>", "reply_to": "me@example.com"}'
+```
+
+## Example — MCP Tool Call
+
+> "Send an email to user@example.com with the subject 'Meeting Notes' and the HTML body I've prepared."
+
+```json
+{
+  "tool": "x402_send_email",
+  "arguments": {
+    "to": "user@example.com",
+    "subject": "Meeting Notes",
+    "body": "<h1>Meeting Notes</h1><p>Here are the notes from today's meeting...</p>",
+    "reply_to": "me@example.com"
+  }
+}
+```
+
+## Returns
+
+On success, the API returns:
+
+```json
+{
+  "success": true,
+  "message_id": "re_abc123xyz"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `success` | boolean | `true` when the email was accepted for delivery |
+| `message_id` | string | Resend message ID for delivery tracking |
+
+## Rate Limits
+
+<Aside type="caution">
+Limited to 10 emails per day per wallet and 5 emails per day per wallet per recipient domain. Both limits reset at midnight UTC.
+</Aside>
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| 402 | Payment required — x402 handshake (handled automatically by MCP server) |
+| 422 | Invalid email address, subject too long, or body exceeds 100 KB |
+| 429 | Daily wallet limit (10/day), per-domain limit (5/day), or free test rate limit (100/hour per IP) exceeded |
+| 500 | Email provider authentication error |
+| 503 | Email provider quota exhausted or temporarily unavailable |
