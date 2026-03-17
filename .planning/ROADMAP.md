@@ -90,7 +90,9 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
   1. Submitting a DOCX file with type "docx" to x402_convert_file returns a base64-encoded PDF
   2. The returned PDF preserves the document's text content, headings, tables, and embedded images
   3. The API docs page for File Conversion explicitly notes the conversion is content-document fidelity, not layout-preserving
-**Plans**: TBD
+**Plans**: 2 plans (Wave 1 parallel)
+- [ ] 14-01-PLAN.md — Backend: mammoth dependency, sync_docx_to_pdf function, Pydantic model + dispatch (autonomous)
+- [ ] 14-02-PLAN.md — MCP tool Zod schema extension + docs update with CONV-03 fidelity note (autonomous)
 
 ### Phase 15: Shallow Site Crawl
 **Goal**: Agents can crawl a site's pages and receive structured per-page extraction results via a single tool call
@@ -136,7 +138,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 11. Rebrand + Domain + SSL | 2/2 | Complete    | 2026-03-16 | - |
 | 12. API Documentation | 2/2 | Complete    | 2026-03-17 | - |
 | 13. Email Attachments + CC/BCC | 2/2 | Complete    | 2026-03-17 | - |
-| 14. DOCX-to-PDF Conversion | v2.0 | 0/TBD | Not started | - |
+| 14. DOCX-to-PDF Conversion | v2.0 | 0/2 | Planned | - |
 | 15. Shallow Site Crawl | v2.0 | 0/TBD | Not started | - |
 | 16. MCP Server Update + npm Publish | v2.0 | 0/TBD | Not started | - |
 
