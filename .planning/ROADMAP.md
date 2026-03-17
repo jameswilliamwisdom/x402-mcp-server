@@ -41,7 +41,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 **Milestone Goal:** Rebrand to Bismuth, go public on usebismuth.com with HTTPS, ship complete API reference docs, extend three backend APIs (email attachments/CC/BCC, DOCX-to-PDF, shallow site crawl), and publish x402-mcp-server@2.0.0.
 
 - [x] **Phase 11: Rebrand + Domain + SSL** - Rename brand to Bismuth, register usebismuth.com, deploy site publicly with Cloudflare Tunnel HTTPS (2/2 plans created) (completed 2026-03-16)
-- [ ] **Phase 12: API Documentation** - Write 5 reference pages for all v1.1 APIs in Starlight with parameters, examples, and error codes
+- [x] **Phase 12: API Documentation** - Write 5 reference pages for all v1.1 APIs in Starlight with parameters, examples, and error codes (completed 2026-03-17)
 - [ ] **Phase 13: Email Attachments + CC/BCC** - Extend email API to accept CC, BCC, and base64 file attachments with size validation
 - [ ] **Phase 14: DOCX-to-PDF Conversion** - Add DOCX input type to conversion API via mammoth + WeasyPrint pipeline
 - [ ] **Phase 15: Shallow Site Crawl** - New crawl endpoint on scraping API with BFS, 15-page sync cap, path filters, and per-URL SSRF validation
@@ -134,7 +134,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 9. Audio Transcription API | v1.1 | 2/2 | Complete | 2026-03-15 |
 | 10. MCP Server Update + npm Publish | v1.1 | 2/2 | Complete | 2026-03-15 |
 | 11. Rebrand + Domain + SSL | 2/2 | Complete    | 2026-03-16 | - |
-| 12. API Documentation | v2.0 | 0/TBD | Not started | - |
+| 12. API Documentation | 2/2 | Complete   | 2026-03-17 | - |
 | 13. Email Attachments + CC/BCC | v2.0 | 0/TBD | Not started | - |
 | 14. DOCX-to-PDF Conversion | v2.0 | 0/TBD | Not started | - |
 | 15. Shallow Site Crawl | v2.0 | 0/TBD | Not started | - |
