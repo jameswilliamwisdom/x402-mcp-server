@@ -1,11 +1,11 @@
 ---
 title: File Conversion API
-description: Convert images, CSV, and HTML to different formats. $0.02 USDC per call.
+description: Convert images, CSV, HTML, and DOCX to different formats. $0.02 USDC per call.
 ---
 
 import { Aside } from '@astrojs/starlight/components';
 
-Convert images (resize and reformat), CSV files (to structured JSON), and HTML pages (to PDF). Supports three conversion types controlled by the `type` discriminator field.
+Convert images (resize and reformat), CSV files (to structured JSON), HTML pages (to PDF), and DOCX documents (to PDF). Supports four conversion types controlled by the `type` discriminator field.
 
 ## Endpoints
 
@@ -22,13 +22,13 @@ Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request 
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `type` | string | Yes | — | Conversion type: `"image"`, `"csv"`, or `"html_pdf"` |
+| `type` | string | Yes | — | Conversion type: `"image"`, `"csv"`, `"html_pdf"`, or `"docx"` |
 | `url` | string | Yes | — | Source file URL (http/https, max 2048 chars, max 10MB) |
 | `format` | string | No (image only) | `"jpeg"` | Output format: `"jpeg"`, `"png"`, `"webp"`, `"gif"` |
 | `width` | integer | No (image only) | — | Target width in pixels (1–8000) |
 | `height` | integer | No (image only) | — | Target height in pixels (1–8000) |
 
-`format`, `width`, and `height` are only used when `type` is `"image"`. They are ignored for `"csv"` and `"html_pdf"`.
+`format`, `width`, and `height` are only used when `type` is `"image"`. They are ignored for `"csv"`, `"html_pdf"`, and `"docx"`.
 
 ## Example — curl
 
@@ -40,6 +40,11 @@ curl https://x402-conversion-api-production.up.railway.app/convert/test
 curl -X POST https://x402-conversion-api-production.up.railway.app/convert \
   -H "Content-Type: application/json" \
   -d '{"type": "image", "url": "https://example.com/photo.jpg", "format": "png", "width": 800}'
+
+# Paid call — DOCX to PDF conversion
+curl -X POST https://x402-conversion-api-production.up.railway.app/convert \
+  -H "Content-Type: application/json" \
+  -d '{"type": "docx", "url": "https://example.com/document.docx"}'
 ```
 
 ## Example — MCP Tool Call
@@ -65,6 +70,11 @@ All conversion types return a `data` field containing base64-encoded output:
 - `type: "image"` — base64-decode `data` to get image bytes in the requested format
 - `type: "csv"` — base64-decode `data` to get a JSON array of objects (one object per row)
 - `type: "html_pdf"` — base64-decode `data` to get PDF binary
+- `type: "docx"` — base64-decode `data` to get PDF binary (content-document fidelity; layout, fonts, and formatting are not preserved)
+
+<Aside type="caution" title="DOCX conversion is content-fidelity, not layout-preserving">
+DOCX-to-PDF conversion preserves text, headings, tables, and embedded images. Page layout, margins, custom fonts (Calibri substituted with Liberation Sans), table formatting, headers/footers, and underlined text are not preserved. For layout-accurate conversion, use a dedicated office suite. Conversion time scales with document complexity; table-heavy documents may take 10-30 seconds.
+</Aside>
 
 <Aside type="note">
 For CSV conversions, `data` is base64-encoded JSON — not raw JSON. Always base64-decode before parsing.
