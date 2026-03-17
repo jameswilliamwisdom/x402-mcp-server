@@ -19,8 +19,8 @@ Requirements for v2.0 Bismuth Launch. Each maps to roadmap phases.
 - [x] **DOCS-01**: API reference page for Web Scraping API with parameter table, curl + MCP tool call examples, error codes
 - [x] **DOCS-02**: API reference page for File Conversion API with parameter table, curl + MCP tool call examples, error codes
 - [x] **DOCS-03**: API reference page for Web Search API with parameter table, curl + MCP tool call examples, error codes
-- [ ] **DOCS-04**: API reference page for Email Sending API with parameter table, curl + MCP tool call examples, error codes
-- [ ] **DOCS-05**: API reference page for Audio Transcription API with parameter table, curl + MCP tool call examples, error codes
+- [x] **DOCS-04**: API reference page for Email Sending API with parameter table, curl + MCP tool call examples, error codes
+- [x] **DOCS-05**: API reference page for Audio Transcription API with parameter table, curl + MCP tool call examples, error codes
 
 ### Email Enhancements
 
@@ -103,8 +103,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-01 | Phase 12 | Complete |
 | DOCS-02 | Phase 12 | Complete |
 | DOCS-03 | Phase 12 | Complete |
-| DOCS-04 | Phase 12 | Pending |
-| DOCS-05 | Phase 12 | Pending |
+| DOCS-04 | Phase 12 | Complete |
+| DOCS-05 | Phase 12 | Complete |
 | EMAIL-01 | Phase 13 | Pending |
 | EMAIL-02 | Phase 13 | Pending |
 | EMAIL-03 | Phase 13 | Pending |
