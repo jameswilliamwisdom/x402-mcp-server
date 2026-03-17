@@ -3,35 +3,35 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Bismuth Launch
 status: unknown
-last_updated: "2026-03-17T04:17:03Z"
+last_updated: "2026-03-17T04:22:00Z"
 progress:
   total_phases: 16
-  completed_phases: 12
-  total_plans: 26
-  completed_plans: 26
+  completed_phases: 13
+  total_plans: 27
+  completed_plans: 27
 ---
 
 # State: Bismuth (x402 API Network)
 
 **Milestone:** v2.0 — Bismuth Launch
 **Last updated:** 2026-03-17
-**Overall status:** Phase 13 in progress — 13-01 complete (backend CC/BCC/attachments). 13-02 (MCP tool extension) ready to begin.
+**Overall status:** Phase 13 complete — 13-01 (backend CC/BCC/attachments) and 13-02 (MCP tool extension + docs) both done. All EMAIL-01 through EMAIL-04 requirements satisfied end-to-end.
 
 ## Current Position
 
-Phase: 13 of 16 (Email Attachments + CC/BCC) — IN PROGRESS
-Plan: 13-01 complete (AttachmentItem model, EmailRequest extension, build_send_params + rate limiter updates)
-Status: 13-01 complete — advancing to 13-02
-Last activity: 2026-03-17 — 13-01 complete: AttachmentItem model + cc/bcc/attachments on EmailRequest; domain rate limiter extended to all recipients; all 4 EMAIL requirements satisfied at backend level
+Phase: 13 of 16 (Email Attachments + CC/BCC) — COMPLETE
+Plan: 13-02 complete (MCP tool schema extension + email API docs update)
+Status: Phase 13 complete — advancing to Phase 14
+Last activity: 2026-03-17 — 13-02 complete: x402_send_email Zod schema extended with cc/bcc/attachments; conditional payload assembly; email API docs updated with parameter tables, attachment object schema, curl + MCP examples, rate limit and error code updates
 
-Progress: [█░░░░░░░░░] 50% (1/2 plans in Phase 13 complete)
+Progress: [██████████] 100% (2/2 plans in Phase 13 complete)
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-03-15)
 
 **Core value:** AI agents can discover and pay for useful APIs with zero integration friction
-**Current focus:** Phase 13 — Email Attachments + CC/BCC (backend done, MCP tool extension next)
+**Current focus:** Phase 14 — DOCX Conversion API
 
 ## Accumulated Context
 
@@ -60,6 +60,8 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 - [Phase 13-01]: List[EmailStr] for cc/bcc — email-validator rejects CRLF injection automatically; List[str] would not
 - [Phase 13-01]: domain rate limiter extended to all_recipients loop — prevents CC/BCC domain bypass attack vector
 - [Phase 13-01]: path field omitted from AttachmentItem — SSRF risk, explicitly Out of Scope per REQUIREMENTS.md
+- [Phase 13-02]: All new Zod fields use .optional() — backward compat for existing callers passing only to/subject/body
+- [Phase 13-02]: Payload assembly uses conditional includes matching reply_to pattern — backend rejects null values
 
 ### Pending Todos
 
@@ -75,5 +77,5 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 13-01-PLAN.md — Phase 13 backend complete. x402-email-api extended with AttachmentItem model, cc/bcc/attachments on EmailRequest, updated build_send_params and domain rate limiter.
+Stopped at: Completed 13-02-PLAN.md — Phase 13 complete. x402_send_email MCP tool extended with cc/bcc/attachments schema; email API docs updated with full parameter documentation, examples, and error codes.
 Resume file: None

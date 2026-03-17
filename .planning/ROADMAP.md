@@ -42,7 +42,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 
 - [x] **Phase 11: Rebrand + Domain + SSL** - Rename brand to Bismuth, register usebismuth.com, deploy site publicly with Cloudflare Tunnel HTTPS (2/2 plans created) (completed 2026-03-16)
 - [x] **Phase 12: API Documentation** - Write 5 reference pages for all v1.1 APIs in Starlight with parameters, examples, and error codes (completed 2026-03-17)
-- [ ] **Phase 13: Email Attachments + CC/BCC** - Extend email API to accept CC, BCC, and base64 file attachments with size validation
+- [x] **Phase 13: Email Attachments + CC/BCC** - Extend email API to accept CC, BCC, and base64 file attachments with size validation (completed 2026-03-17)
 - [ ] **Phase 14: DOCX-to-PDF Conversion** - Add DOCX input type to conversion API via mammoth + WeasyPrint pipeline
 - [ ] **Phase 15: Shallow Site Crawl** - New crawl endpoint on scraping API with BFS, 15-page sync cap, path filters, and per-URL SSRF validation
 - [ ] **Phase 16: MCP Server Update + npm Publish** - Register x402_crawl_site, update email and convert Zod schemas, publish v2.0.0
@@ -135,7 +135,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 10. MCP Server Update + npm Publish | v1.1 | 2/2 | Complete | 2026-03-15 |
 | 11. Rebrand + Domain + SSL | 2/2 | Complete    | 2026-03-16 | - |
 | 12. API Documentation | 2/2 | Complete    | 2026-03-17 | - |
-| 13. Email Attachments + CC/BCC | 1/2 | In Progress|  | - |
+| 13. Email Attachments + CC/BCC | 2/2 | Complete   | 2026-03-17 | - |
 | 14. DOCX-to-PDF Conversion | v2.0 | 0/TBD | Not started | - |
 | 15. Shallow Site Crawl | v2.0 | 0/TBD | Not started | - |
 | 16. MCP Server Update + npm Publish | v2.0 | 0/TBD | Not started | - |
