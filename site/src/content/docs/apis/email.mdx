@@ -7,7 +7,7 @@ import { Aside } from '@astrojs/starlight/components';
 
 {/* SYNC: price must match src/index.ts @pay() decorator and PricingTable.astro */}
 
-Send transactional emails with HTML or plain text content via the Bismuth Email Sending API. Emails are delivered using Resend and charged at $0.01 USDC per call.
+Send transactional emails with HTML or plain text content via the Bismuth Email Sending API. Supports CC/BCC recipients and file attachments (base64-encoded, max 25MB per file). Emails are delivered using Resend and charged at $0.01 USDC per call.
 
 ## Endpoints
 
@@ -32,6 +32,23 @@ All emails are sent from `x402 Email API <noreply@jameswisdom.ink>`. The From ad
 | `subject` | string | Yes | — | Email subject (max 998 characters, RFC 5321) |
 | `body` | string | Yes | — | Email body — HTML or plain text (max 100 KB); HTML auto-detected |
 | `reply_to` | string | No | — | Reply-to address for recipient responses |
+| `cc` | string[] | No | — | CC recipients — list of email addresses |
+| `bcc` | string[] | No | — | BCC recipients — list of email addresses |
+| `attachments` | object[] | No | — | File attachments (see Attachments section below) |
+
+### Attachment Object
+
+Each attachment in the `attachments` array has the following fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `filename` | string | Yes | Filename including extension (e.g. `report.pdf`) |
+| `content` | string | Yes | Base64-encoded file content (max 25MB decoded) |
+| `content_type` | string | No | MIME type — auto-derived from filename if omitted |
+
+<Aside type="caution">
+Attachment size is validated against the **decoded** byte length, not the base64 string length. Each file must be under 25MB before encoding. The `content_type` field is optional — if omitted, it is auto-derived from the filename extension.
+</Aside>
 
 ## Example — curl
 
@@ -39,15 +56,27 @@ All emails are sent from `x402 Email API <noreply@jameswisdom.ink>`. The From ad
 # Free test (no wallet required — no real email sent)
 curl https://x402-email-api-production.up.railway.app/send/test
 
-# Paid call (requires x402-fetch or x402-mcp-server — handles X-Payment header automatically)
+# Paid call — basic email
 curl -X POST https://x402-email-api-production.up.railway.app/send \
   -H "Content-Type: application/json" \
   -d '{"to": "user@example.com", "subject": "Hello from Bismuth", "body": "<h1>Hello</h1><p>Sent via Bismuth email API.</p>", "reply_to": "me@example.com"}'
+
+# Paid call — email with CC, BCC, and attachment
+curl -X POST https://x402-email-api-production.up.railway.app/send \
+  -H "Content-Type: application/json" \
+  -d '{
+    "to": "user@example.com",
+    "subject": "Q1 Report",
+    "body": "<p>Please find the Q1 report attached.</p>",
+    "cc": ["manager@example.com"],
+    "bcc": ["archive@example.com"],
+    "attachments": [{"filename": "report.pdf", "content": "JVBERi0xLjQ..."}]
+  }'
 ```
 
 ## Example — MCP Tool Call
 
-> "Send an email to user@example.com with the subject 'Meeting Notes' and the HTML body I've prepared."
+> "Send an email to user@example.com with the subject 'Meeting Notes', CC the team lead, and attach the PDF report."
 
 ```json
 {
@@ -55,8 +84,16 @@ curl -X POST https://x402-email-api-production.up.railway.app/send \
   "arguments": {
     "to": "user@example.com",
     "subject": "Meeting Notes",
-    "body": "<h1>Meeting Notes</h1><p>Here are the notes from today's meeting...</p>",
-    "reply_to": "me@example.com"
+    "body": "<h1>Meeting Notes</h1><p>Here are the notes from today's meeting.</p>",
+    "reply_to": "me@example.com",
+    "cc": ["lead@example.com"],
+    "attachments": [
+      {
+        "filename": "notes.pdf",
+        "content": "JVBERi0xLjQ...",
+        "content_type": "application/pdf"
+      }
+    ]
   }
 }
 ```
@@ -80,7 +117,7 @@ On success, the API returns:
 ## Rate Limits
 
 <Aside type="caution">
-Limited to 10 emails per day per wallet and 5 emails per day per wallet per recipient domain. Both limits reset at midnight UTC.
+Limited to 10 emails per day per wallet and 5 emails per day per wallet per recipient domain (including CC and BCC recipients). Both limits reset at midnight UTC.
 </Aside>
 
 ## Error Codes
@@ -88,7 +125,7 @@ Limited to 10 emails per day per wallet and 5 emails per day per wallet per reci
 | Code | Meaning |
 |------|---------|
 | 402 | Payment required — x402 handshake (handled automatically by MCP server) |
-| 422 | Invalid email address, subject too long, or body exceeds 100 KB |
+| 422 | Invalid email address, subject too long, body exceeds 100 KB, invalid base64 attachment, or attachment exceeds 25MB |
 | 429 | Daily wallet limit (10/day), per-domain limit (5/day), or free test rate limit (100/hour per IP) exceeded |
 | 500 | Email provider authentication error |
 | 503 | Email provider quota exhausted or temporarily unavailable |
