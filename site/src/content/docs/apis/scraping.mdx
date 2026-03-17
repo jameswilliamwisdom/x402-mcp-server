@@ -1,0 +1,77 @@
+---
+title: Web Scraping API
+description: Scrape any URL and return structured markdown, links, tables, and metadata. $0.02 USDC per call.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Scrape any public URL and receive the page content as structured markdown along with extracted links, tables, and metadata. Powered by a headless browser — handles JavaScript-rendered pages and SPAs.
+
+## Endpoints
+
+**Free test endpoint:** `GET /scrape/test` at `https://x402-scraping-api-production.up.railway.app` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /scrape` — $0.02 USDC on Base per call.
+
+{/* SYNC: price must match src/index.ts @pay() decorator and PricingTable.astro */}
+
+<Aside type="tip" title="No API key required">
+Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.02 USDC on Base. Use the free test endpoint to confirm the response schema before enabling payments.
+</Aside>
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `url` | string | Yes | — | Page to scrape (http/https, max 2048 chars) |
+| `wait_for` | string | No | — | CSS selector to wait for before extraction (for SPAs) |
+
+## Example — curl
+
+```bash
+# Free test (no wallet required)
+curl https://x402-scraping-api-production.up.railway.app/scrape/test
+
+# Paid call (requires x402-fetch or x402-mcp-server — handles X-Payment header automatically)
+curl -X POST https://x402-scraping-api-production.up.railway.app/scrape \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com"}'
+```
+
+## Example — MCP Tool Call
+
+> "Scrape the blog post at https://example.com/article and return the markdown content."
+
+```json
+{
+  "tool": "x402_scrape_url",
+  "arguments": {
+    "url": "https://example.com/article"
+  }
+}
+```
+
+## Returns
+
+The response contains the following fields:
+
+- `success` (boolean) — whether extraction succeeded
+- `markdown` (string) — extracted page content as markdown
+- `links` (array of strings) — URLs found on the page
+- `tables` (array) — extracted tables from the page
+- `metadata` (object) — page title, description, and other meta tags
+
+<Aside type="caution">
+HTTP 200 with `success: false` indicates the page loaded but extraction failed. This is not an HTTP error. Check the `error` field for: `timeout`, `browser_error`, `non_html_content`, `blocked_by_protection`.
+</Aside>
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| 400 | SSRF blocked — URL targets a private/reserved IP range |
+| 402 | Payment required — x402 handshake (handled automatically by MCP server) |
+| 422 | Invalid URL or parameter validation failed |
+| 429 | Rate limit exceeded (free test: 100/hour per IP) |
+| 503 | Browser unavailable — scraping backend overloaded |
+
+HTTP 200 with `success: false` indicates the page loaded but extraction failed. Check the `error` field for: `timeout`, `browser_error`, `non_html_content`, `blocked_by_protection`.

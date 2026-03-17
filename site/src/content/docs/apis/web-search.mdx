@@ -1,0 +1,79 @@
+---
+title: Web Search API
+description: Search the web and return structured results with titles, URLs, and snippets. $0.01 USDC per call.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Search the web and receive structured results with titles, URLs, and content snippets. Optionally include a synthesized answer above the results. Powered by Tavily.
+
+## Endpoints
+
+**Free test endpoint:** `GET /search/test` at `https://x402-search-api-production.up.railway.app` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /search` — $0.01 USDC on Base per call.
+
+{/* SYNC: price must match src/index.ts @pay() decorator and PricingTable.astro */}
+
+<Aside type="tip" title="No API key required">
+Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.01 USDC on Base. Use the free test endpoint to confirm the response schema before enabling payments.
+</Aside>
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | Yes | — | Search query (1–400 characters) |
+| `max_results` | integer | No | `5` | Number of results to return (1–10) |
+| `include_answer` | boolean | No | `false` | Include a synthesized answer above search results |
+| `include_domains` | string[] | No | — | Restrict results to these domains (max 20) |
+| `exclude_domains` | string[] | No | — | Exclude results from these domains (max 20) |
+
+<Aside type="caution">
+Limited to 50 queries per day per wallet, resetting at midnight UTC.
+</Aside>
+
+## Example — curl
+
+```bash
+# Free test (no wallet required)
+curl https://x402-search-api-production.up.railway.app/search/test
+
+# Paid call (requires x402-fetch or x402-mcp-server — handles X-Payment header automatically)
+curl -X POST https://x402-search-api-production.up.railway.app/search \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Ethereum L2 scaling solutions 2025", "max_results": 3}'
+```
+
+## Example — MCP Tool Call
+
+> "Search for recent news about Ethereum L2 scaling solutions, limit to 3 results."
+
+```json
+{
+  "tool": "x402_web_search",
+  "arguments": {
+    "query": "Ethereum L2 scaling solutions 2025",
+    "max_results": 3
+  }
+}
+```
+
+## Returns
+
+The response contains an array of result objects, each with:
+
+- `title` (string) — page title
+- `url` (string) — page URL
+- `content` (string) — snippet or summary of the page content
+
+If `include_answer` is `true`, the response also includes an `answer` field with a synthesized summary above the individual results.
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| 402 | Payment required — x402 handshake (handled automatically by MCP server) |
+| 422 | Invalid query or parameter validation failed |
+| 429 | Daily wallet limit (50/day) or free test rate limit (100/hour per IP) exceeded |
+| 500 | Search provider error |
+| 503 | Search provider credits exhausted |

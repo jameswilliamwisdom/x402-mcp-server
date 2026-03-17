@@ -1,0 +1,86 @@
+---
+title: File Conversion API
+description: Convert images, CSV, and HTML to different formats. $0.02 USDC per call.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Convert images (resize and reformat), CSV files (to structured JSON), and HTML pages (to PDF). Supports three conversion types controlled by the `type` discriminator field.
+
+## Endpoints
+
+**Free test endpoint:** `GET /convert/test` at `https://x402-conversion-api-production.up.railway.app` — returns fixture data, no wallet required.
+**Paid endpoint:** `POST /convert` — $0.02 USDC on Base per call.
+
+{/* SYNC: price must match src/index.ts @pay() decorator and PricingTable.astro */}
+
+<Aside type="tip" title="No API key required">
+Add `X402_PRIVATE_KEY` to your MCP config to enable paid calls — each request automatically settles $0.02 USDC on Base. Use the free test endpoint to confirm the response schema before enabling payments.
+</Aside>
+
+## Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `type` | string | Yes | — | Conversion type: `"image"`, `"csv"`, or `"html_pdf"` |
+| `url` | string | Yes | — | Source file URL (http/https, max 2048 chars, max 10MB) |
+| `format` | string | No (image only) | `"jpeg"` | Output format: `"jpeg"`, `"png"`, `"webp"`, `"gif"` |
+| `width` | integer | No (image only) | — | Target width in pixels (1–8000) |
+| `height` | integer | No (image only) | — | Target height in pixels (1–8000) |
+
+`format`, `width`, and `height` are only used when `type` is `"image"`. They are ignored for `"csv"` and `"html_pdf"`.
+
+## Example — curl
+
+```bash
+# Free test (no wallet required)
+curl https://x402-conversion-api-production.up.railway.app/convert/test
+
+# Paid call — image conversion (requires x402-fetch or x402-mcp-server)
+curl -X POST https://x402-conversion-api-production.up.railway.app/convert \
+  -H "Content-Type: application/json" \
+  -d '{"type": "image", "url": "https://example.com/photo.jpg", "format": "png", "width": 800}'
+```
+
+## Example — MCP Tool Call
+
+> "Convert this image to PNG at 800px wide: https://example.com/photo.jpg"
+
+```json
+{
+  "tool": "x402_convert_file",
+  "arguments": {
+    "type": "image",
+    "url": "https://example.com/photo.jpg",
+    "format": "png",
+    "width": 800
+  }
+}
+```
+
+## Returns
+
+All conversion types return a `data` field containing base64-encoded output:
+
+- `type: "image"` — base64-decode `data` to get image bytes in the requested format
+- `type: "csv"` — base64-decode `data` to get a JSON array of objects (one object per row)
+- `type: "html_pdf"` — base64-decode `data` to get PDF binary
+
+<Aside type="note">
+For CSV conversions, `data` is base64-encoded JSON — not raw JSON. Always base64-decode before parsing.
+</Aside>
+
+<Aside type="caution">
+HTTP 200 with `success: false` indicates download or conversion failure. Check the `error` field for: `download_error`, `http_error`, `conversion_error`, `output_too_large`.
+</Aside>
+
+## Error Codes
+
+| Code | Meaning |
+|------|---------|
+| 400 | SSRF blocked — URL targets a private/reserved IP range |
+| 402 | Payment required — x402 handshake (handled automatically by MCP server) |
+| 422 | Invalid URL, unsupported type, or parameter validation failed |
+| 429 | Rate limit exceeded (free test: 100/hour per IP) |
+
+HTTP 200 with `success: false` indicates download or conversion failure. Check the `error` field for: `download_error`, `http_error`, `conversion_error`, `output_too_large`.
