@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Bismuth Launch
 status: unknown
-last_updated: "2026-03-17T00:25:00Z"
+last_updated: "2026-03-17T00:30:13.674Z"
 progress:
-  total_phases: 16
+  total_phases: 12
   completed_phases: 12
   total_plans: 25
   completed_plans: 25
