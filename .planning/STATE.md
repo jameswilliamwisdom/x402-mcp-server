@@ -3,35 +3,35 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Bismuth Launch
 status: unknown
-last_updated: "2026-03-17T00:30:13.674Z"
+last_updated: "2026-03-17T04:17:03Z"
 progress:
-  total_phases: 12
+  total_phases: 16
   completed_phases: 12
-  total_plans: 25
-  completed_plans: 25
+  total_plans: 26
+  completed_plans: 26
 ---
 
 # State: Bismuth (x402 API Network)
 
 **Milestone:** v2.0 — Bismuth Launch
 **Last updated:** 2026-03-17
-**Overall status:** Phase 12 complete — API Documentation done. All 5 API reference pages live at usebismuth.com/apis/*. Phase 13 ready to begin.
+**Overall status:** Phase 13 in progress — 13-01 complete (backend CC/BCC/attachments). 13-02 (MCP tool extension) ready to begin.
 
 ## Current Position
 
-Phase: 12 of 16 (API Documentation) — COMPLETE
-Plan: 12-01 complete (sidebar config, pricing fix, 3 API pages), 12-02 complete (email + audio-transcription pages + deploy.sh smoke tests)
-Status: Phase 12 fully complete — advancing to Phase 13
-Last activity: 2026-03-17 — 12-02 complete: Email Sending + Audio Transcription API pages created; deploy.sh smoke tests added for all 5 API URLs; Astro build verified (11 pages)
+Phase: 13 of 16 (Email Attachments + CC/BCC) — IN PROGRESS
+Plan: 13-01 complete (AttachmentItem model, EmailRequest extension, build_send_params + rate limiter updates)
+Status: 13-01 complete — advancing to 13-02
+Last activity: 2026-03-17 — 13-01 complete: AttachmentItem model + cc/bcc/attachments on EmailRequest; domain rate limiter extended to all recipients; all 4 EMAIL requirements satisfied at backend level
 
-Progress: [██████████] 100% (2/2 plans in Phase 12 complete)
+Progress: [█░░░░░░░░░] 50% (1/2 plans in Phase 13 complete)
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-03-15)
 
 **Core value:** AI agents can discover and pay for useful APIs with zero integration friction
-**Current focus:** Phase 13 — (next phase after API Documentation)
+**Current focus:** Phase 13 — Email Attachments + CC/BCC (backend done, MCP tool extension next)
 
 ## Accumulated Context
 
@@ -55,6 +55,11 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 - [Phase 12-02]: Email fixed From address documented in note Aside (not caution) — expected API behavior, not a warning
 - [Phase 12-02]: Transcription branching response documented as two separate JSON code blocks — clearer than table for showing full schema variants
 - [Phase 12-02]: Billing-on-download caveat in caution Aside immediately after hard limits explanation for maximum visibility
+- [Phase 13-01]: Attachment size check uses decoded byte length (len(base64.b64decode(v))), NOT string length — base64 33% expansion means string length check would reject 18.7MB files
+- [Phase 13-01]: base64 string passed directly to Resend SDK content field — Resend accepts Union[List[int], str] not bytes; Python bytes would raise TypeError during JSON serialization
+- [Phase 13-01]: List[EmailStr] for cc/bcc — email-validator rejects CRLF injection automatically; List[str] would not
+- [Phase 13-01]: domain rate limiter extended to all_recipients loop — prevents CC/BCC domain bypass attack vector
+- [Phase 13-01]: path field omitted from AttachmentItem — SSRF risk, explicitly Out of Scope per REQUIREMENTS.md
 
 ### Pending Todos
 
@@ -70,5 +75,5 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 12-02-PLAN.md — Phase 12 API Documentation fully complete. All 5 API reference pages built and verified.
+Stopped at: Completed 13-01-PLAN.md — Phase 13 backend complete. x402-email-api extended with AttachmentItem model, cc/bcc/attachments on EmailRequest, updated build_send_params and domain rate limiter.
 Resume file: None

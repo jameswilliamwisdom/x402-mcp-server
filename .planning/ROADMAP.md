@@ -135,7 +135,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 10. MCP Server Update + npm Publish | v1.1 | 2/2 | Complete | 2026-03-15 |
 | 11. Rebrand + Domain + SSL | 2/2 | Complete    | 2026-03-16 | - |
 | 12. API Documentation | 2/2 | Complete    | 2026-03-17 | - |
-| 13. Email Attachments + CC/BCC | v2.0 | 0/TBD | Not started | - |
+| 13. Email Attachments + CC/BCC | 1/2 | In Progress|  | - |
 | 14. DOCX-to-PDF Conversion | v2.0 | 0/TBD | Not started | - |
 | 15. Shallow Site Crawl | v2.0 | 0/TBD | Not started | - |
 | 16. MCP Server Update + npm Publish | v2.0 | 0/TBD | Not started | - |

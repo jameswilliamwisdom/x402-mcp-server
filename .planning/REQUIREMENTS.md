@@ -24,10 +24,10 @@ Requirements for v2.0 Bismuth Launch. Each maps to roadmap phases.
 
 ### Email Enhancements
 
-- [ ] **EMAIL-01**: User can send email with CC recipients via x402_send_email tool
-- [ ] **EMAIL-02**: User can send email with BCC recipients via x402_send_email tool
-- [ ] **EMAIL-03**: User can send email with base64 file attachments (25MB pre-encoding cap)
-- [ ] **EMAIL-04**: Attachment size validated before encoding — reject over 25MB with clear error
+- [x] **EMAIL-01**: User can send email with CC recipients via x402_send_email tool
+- [x] **EMAIL-02**: User can send email with BCC recipients via x402_send_email tool
+- [x] **EMAIL-03**: User can send email with base64 file attachments (25MB pre-encoding cap)
+- [x] **EMAIL-04**: Attachment size validated before encoding — reject over 25MB with clear error
 
 ### Document Conversion
 
@@ -105,10 +105,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOCS-03 | Phase 12 | Complete |
 | DOCS-04 | Phase 12 | Complete |
 | DOCS-05 | Phase 12 | Complete |
-| EMAIL-01 | Phase 13 | Pending |
-| EMAIL-02 | Phase 13 | Pending |
-| EMAIL-03 | Phase 13 | Pending |
-| EMAIL-04 | Phase 13 | Pending |
+| EMAIL-01 | Phase 13 | Complete |
+| EMAIL-02 | Phase 13 | Complete |
+| EMAIL-03 | Phase 13 | Complete |
+| EMAIL-04 | Phase 13 | Complete |
 | CONV-01 | Phase 14 | Pending |
 | CONV-02 | Phase 14 | Pending |
 | CONV-03 | Phase 14 | Pending |
