@@ -6,17 +6,20 @@ Free test endpoint. Gated behind x402 USDC payment.
 """
 
 import os
+import base64
 import hashlib
 import logging
+import mimetypes
+import re
 import threading
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from fastapi_x402 import init_x402, pay
 import resend
@@ -36,6 +39,10 @@ logger = logging.getLogger("x402-email")
 DAILY_SEND_LIMIT = 10
 DAILY_DOMAIN_LIMIT = 5
 FROM_ADDRESS = "x402 Email API <noreply@jameswisdom.ink>"
+MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024  # 25MB pre-encoding cap
+MIME_TYPE_PATTERN = re.compile(
+    r'^[a-zA-Z0-9][a-zA-Z0-9!#$&\-^_]*\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-^_.+]*$'
+)
 
 
 # =============================================================================
@@ -135,6 +142,47 @@ def log_send_event(wallet: str, to_address: str, subject: str, message_id: str) 
 # Pydantic Request Model
 # =============================================================================
 
+class AttachmentItem(BaseModel):
+    filename: str = Field(..., min_length=1, max_length=255,
+                          description="Attachment filename including extension")
+    content: str = Field(..., description="Base64-encoded file content")
+    content_type: Optional[str] = Field(
+        None,
+        description="MIME type — auto-derived from filename if omitted"
+    )
+
+    @field_validator("filename")
+    @classmethod
+    def validate_filename(cls, v: str) -> str:
+        v = os.path.basename(v.replace("\\", "/"))
+        if any(ord(c) < 32 for c in v):
+            raise ValueError("filename contains control characters")
+        if not v:
+            raise ValueError("filename is empty after sanitization")
+        return v
+
+    @field_validator("content_type")
+    @classmethod
+    def validate_mime_type(cls, v: Optional[str]) -> Optional[str]:
+        if v is not None and not MIME_TYPE_PATTERN.match(v):
+            raise ValueError("content_type must be a valid MIME type (e.g. application/pdf)")
+        return v
+
+    @field_validator("content")
+    @classmethod
+    def validate_attachment_size(cls, v: str) -> str:
+        try:
+            raw = base64.b64decode(v, validate=True)
+        except Exception:
+            raise ValueError("attachment content is not valid base64")
+        if len(raw) > MAX_ATTACHMENT_BYTES:
+            raise ValueError(
+                f"Attachment exceeds 25MB limit "
+                f"({len(raw) / 1024 / 1024:.1f}MB decoded)"
+            )
+        return v
+
+
 class EmailRequest(BaseModel):
     to: EmailStr = Field(..., description="Recipient email address")
     subject: str = Field(..., min_length=1, max_length=998,
@@ -143,6 +191,18 @@ class EmailRequest(BaseModel):
                       description="Email body — HTML or plain text (max 100 KB)")
     reply_to: Optional[EmailStr] = Field(None,
                                           description="Optional reply-to address")
+    cc: Optional[List[EmailStr]] = Field(
+        None,
+        description="Carbon copy recipients"
+    )
+    bcc: Optional[List[EmailStr]] = Field(
+        None,
+        description="Blind carbon copy recipients"
+    )
+    attachments: Optional[List[AttachmentItem]] = Field(
+        None,
+        description="Base64-encoded file attachments (25MB pre-encoding cap per file)"
+    )
 
 
 # =============================================================================
