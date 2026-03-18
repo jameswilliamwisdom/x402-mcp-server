@@ -1,6 +1,6 @@
-# x402 MCP Server
+# Bismuth — x402 MCP Server
 
-Pay-per-use APIs for AI agents. One npm install, automatic USDC micropayments on Base.
+Pay-per-use APIs for AI agents, powered by the Bismuth (x402 API Network). One npm install, automatic USDC micropayments on Base.
 
 [![License: MIT](https://img.shields.io/github/license/jameswilliamwisdom/x402-mcp-server)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D18-brightgreen)](https://nodejs.org)
@@ -16,20 +16,19 @@ Pay-per-use APIs for AI agents. One npm install, automatic USDC micropayments on
 | `x402_sentiment` | Real-time sentiment analysis for a crypto coin | $0.01 / query |
 | `x402_market_overview` | Broad crypto market sentiment overview | $0.05 / query |
 | `x402_intelligence` | Multi-source crypto intelligence (CoinGecko, DeFiLlama, news, GitHub) | $0.10 / query |
-| `x402_send_email` | Send transactional emails via Resend | $0.01 / email |
+| `x402_send_email` | Send transactional emails via Resend with CC, BCC, and file attachments | $0.01 / email |
 | `x402_scrape_url` | Scrape any URL and return structured markdown, links, tables, metadata | $0.02 / scrape |
-| `x402_convert_file` | Convert files: image resize/reformat, CSV to JSON, HTML to PDF | $0.02 / conversion |
+| `x402_convert_file` | Convert files: image resize/reformat, CSV to JSON, HTML to PDF, DOCX to PDF | $0.02 / conversion |
 | `x402_web_search` | Search the web via Tavily with ranked results and optional AI answer | $0.01 / search |
 | `x402_transcribe_audio` | Transcribe audio files with auto language detection and word timestamps | $0.05 / transcription |
+| `x402_crawl_site` | Crawl a website via BFS and return per-page markdown, links, tables, images, metadata | $0.10 / crawl |
 
-## What's New in 1.1.0
+## What's New in 2.0.0
 
-Five new tools added to the network:
-- **Web Scraping** — scrape any URL with JavaScript rendering support and SSRF protection
-- **File Conversion** — resize images, convert CSV to JSON, or render HTML to PDF
-- **Web Search** — Tavily-powered ranked search results with optional AI-synthesized answers
-- **Email Sending** — transactional email via Resend with abuse rate limits
-- **Audio Transcription** — speech-to-text via faster-whisper with auto language detection (30-120s latency)
+Three capability extensions and one new tool:
+- **Shallow Site Crawl** — new `x402_crawl_site` tool: BFS crawl up to 15 pages from a seed URL
+- **Email CC/BCC/Attachments** — `x402_send_email` now accepts cc, bcc, and base64 file attachments
+- **DOCX to PDF** — `x402_convert_file` now supports type: "docx" for DOCX document conversion
 
 ## Quick Start — Free Mode
 
@@ -55,6 +54,7 @@ Free mode limitations:
 - File conversion returns fixture data (no live conversion)
 - Web search returns fixture results (no live search)
 - Transcription returns fixture transcript (no live transcription)
+- Site crawling returns fixture data (no live crawl)
 
 ## Quick Start — Paid Mode
 
