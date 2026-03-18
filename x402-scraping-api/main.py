@@ -336,6 +336,146 @@ def _passes_path_filter(path: str, include_paths: list[str], exclude_paths: list
     return True
 
 
+async def run_bfs_crawl(
+    seed_url: str,
+    max_pages: int,
+    max_depth: int,
+    include_paths: list[str],
+    exclude_paths: list[str],
+) -> dict:
+    """Breadth-first crawl using deque FIFO. Reuses scrape_page() + extract_content().
+    Returns partial results on per-page failure (CRAWL-07). Aborts only on browser death."""
+    results = []
+    reasons_skipped: list[str] = []
+    pages_skipped = 0
+    top_level_warnings: list[str] = []
+
+    visited: set[str] = set()
+    queue: deque[tuple[str, int]] = deque()
+
+    norm_seed = normalize_url(seed_url)
+    queue.append((seed_url, 0))
+    visited.add(norm_seed)
+
+    seed_netloc: str | None = None  # Derived from first page's final_url (Pitfall 4)
+    crawl_start = time.monotonic()
+
+    while queue and len(results) < max_pages:
+        if time.monotonic() - crawl_start > CRAWL_TOTAL_BUDGET_S:
+            top_level_warnings.append("crawl_timeout")
+            break
+
+        url, depth = queue.popleft()
+
+        try:
+            page_data = await scrape_page(url, wait_for=None)
+        except HTTPException as e:
+            if e.status_code == 503:
+                # Browser dead — abort with partial results
+                top_level_warnings.append("browser_unavailable")
+                break
+            results.append({
+                "success": False, "url": url, "depth": depth,
+                "error": "http_error", "detail": str(e.detail), "warnings": [],
+            })
+            pages_skipped += 1
+            reasons_skipped.append("http_error")
+            continue
+        except Exception as e:
+            results.append({
+                "success": False, "url": url, "depth": depth,
+                "error": "scrape_error", "detail": str(e), "warnings": [],
+            })
+            pages_skipped += 1
+            reasons_skipped.append("scrape_error")
+            continue
+
+        html = page_data["html"]
+        final_url = page_data["final_url"]
+        status_code = page_data["status_code"]
+        response = page_data["response"]
+        extra_warnings = page_data["extra_warnings"]
+
+        # Derive seed_netloc from first page's final_url (handles redirect, Pitfall 4)
+        if seed_netloc is None:
+            seed_netloc = urlparse(final_url).netloc.lower()
+
+        # Add final_url to visited (redirect loop protection)
+        visited.add(normalize_url(final_url))
+
+        extracted = extract_content(html, final_url)
+        if response:
+            headers = response.headers
+            extracted["metadata"].update({
+                "status_code": status_code,
+                "content_type": headers.get("content-type"),
+                "content_language": headers.get("content-language"),
+                "x_robots_tag": headers.get("x-robots-tag"),
+            })
+
+        results.append({
+            "success": True,
+            "url": url,
+            "final_url": final_url,
+            "depth": depth,
+            **extracted,
+            "warnings": extracted["warnings"] + extra_warnings,
+        })
+
+        # Discover links for next BFS level
+        if depth < max_depth:
+            for link in extracted["links"]:
+                href = link["url"]
+                resolved = urljoin(final_url, href)
+                norm = normalize_url(resolved)
+
+                parsed = urlparse(resolved)
+                if parsed.scheme not in ("http", "https"):
+                    continue
+                if norm in visited:
+                    continue
+
+                # SSRF gate — every discovered URL (CRAWL-04, Pitfall 1)
+                try:
+                    validate_url_for_ssrf(resolved)
+                except ValueError:
+                    pages_skipped += 1
+                    reasons_skipped.append("ssrf_blocked")
+                    visited.add(norm)
+                    continue
+
+                # Same-origin gate (strict netloc match)
+                if parsed.netloc.lower() != seed_netloc:
+                    pages_skipped += 1
+                    reasons_skipped.append("off_domain")
+                    visited.add(norm)
+                    continue
+
+                # Path filter gate (CRAWL-05)
+                if not _passes_path_filter(parsed.path, include_paths, exclude_paths):
+                    pages_skipped += 1
+                    reasons_skipped.append("path_filter")
+                    visited.add(norm)
+                    continue
+
+                visited.add(norm)
+                queue.append((resolved, depth + 1))
+
+    succeeded = [r for r in results if r.get("success")]
+    response_body = {
+        "success": len(succeeded) > 0,
+        "seed_url": seed_url,
+        "pages_requested": len(results),
+        "pages_crawled": len(succeeded),
+        "pages_skipped": pages_skipped,
+        "reasons_skipped": list(set(reasons_skipped)),
+        "results": results,
+    }
+    if top_level_warnings:
+        response_body["warnings"] = top_level_warnings
+    return response_body
+
+
 # =============================================================================
 # Content Detection and Extraction
 # =============================================================================
@@ -519,6 +659,12 @@ def load_fixture() -> dict:
         return json.load(f)
 
 
+def load_crawl_fixture() -> dict:
+    """Load and return crawl_fixture.json content."""
+    with open(CRAWL_FIXTURE_PATH, "r") as f:
+        return json.load(f)
+
+
 @app.get("/")
 async def info():
     """Service info and pricing."""
@@ -526,10 +672,12 @@ async def info():
         "service": "x402-scraping-api",
         "price": "$0.02",
         "test": "/scrape/test",
-        "description": "Scrape any URL and return structured JSON: markdown, links, tables, images, metadata",
+        "description": "Scrape or crawl any URL and return structured JSON: markdown, links, tables, images, metadata",
         "endpoints": {
             "POST /scrape": "Scrape a URL (requires x402 USDC payment: $0.02)",
             "GET /scrape/test": "Free fixture response — demonstrates full response schema",
+            "POST /crawl": "Shallow BFS crawl — up to 15 pages (requires x402 USDC payment: $0.10)",
+            "GET /crawl/test": "Free crawl fixture response — demonstrates crawl response schema",
             "GET /health": "Health check (browser status)",
         },
     }
@@ -664,3 +812,57 @@ async def scrape(request: Request, body: ScrapeRequest):
         "metadata": extracted["metadata"],
         "warnings": warnings,
     }
+
+
+# =============================================================================
+# Crawl Routes
+# =============================================================================
+
+@app.get("/crawl/test")
+@limiter.limit("100/hour")
+async def crawl_test(request: Request):
+    """Free test endpoint — returns fixture data (no live crawl, no payment required)."""
+    return load_crawl_fixture()
+
+
+@app.post("/crawl")
+@pay("$0.10")
+async def crawl(request: Request, body: CrawlRequest):
+    """Shallow BFS crawl — up to 15 pages, returns per-page extraction results.
+
+    Same extraction pipeline as POST /scrape. SSRF-validated on every discovered URL.
+    Pricing: $0.10 USDC per crawl (Base network).
+    """
+    global browser
+
+    if browser is None or not browser.is_connected():
+        raise HTTPException(
+            status_code=503,
+            detail="Browser unavailable — container is restarting. Try again in ~15 seconds.",
+        )
+
+    seed_url = str(body.url)
+
+    try:
+        return await run_bfs_crawl(
+            seed_url=seed_url,
+            max_pages=body.max_pages,
+            max_depth=body.max_depth,
+            include_paths=body.include_paths,
+            exclude_paths=body.exclude_paths,
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Crawl error for {seed_url}: {e}")
+        return {
+            "success": False,
+            "seed_url": seed_url,
+            "pages_requested": 0,
+            "pages_crawled": 0,
+            "pages_skipped": 0,
+            "reasons_skipped": [],
+            "results": [],
+            "error": "crawl_error",
+            "detail": str(e),
+        }

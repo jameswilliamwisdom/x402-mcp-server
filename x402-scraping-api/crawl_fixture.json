@@ -1,0 +1,76 @@
+{
+  "success": true,
+  "seed_url": "https://usebismuth.com",
+  "pages_requested": 3,
+  "pages_crawled": 2,
+  "pages_skipped": 1,
+  "reasons_skipped": ["timeout"],
+  "results": [
+    {
+      "success": true,
+      "url": "https://usebismuth.com",
+      "final_url": "https://usebismuth.com/",
+      "depth": 0,
+      "markdown": "# Bismuth\n\nPay-per-use APIs for AI agents. No API key \u2014 pay per call with USDC on Base.\n\n## APIs\n\n- Web Scraping \u2014 scrape any URL for structured content\n- File Conversion \u2014 convert images, CSV, HTML, and DOCX to other formats\n- Web Search \u2014 search the web via Tavily\n- Email Sending \u2014 send transactional emails via Resend\n- Audio Transcription \u2014 transcribe audio files with Whisper",
+      "links": [
+        {"url": "https://usebismuth.com/apis/scraping", "text": "Web Scraping API"},
+        {"url": "https://usebismuth.com/apis/file-conversion", "text": "File Conversion API"},
+        {"url": "https://usebismuth.com/pricing", "text": "Pricing"}
+      ],
+      "tables": [],
+      "images": [],
+      "metadata": {
+        "title": "Bismuth \u2014 Pay-Per-Use APIs for AI Agents",
+        "description": "Pay-per-use APIs for AI agents. No API key required.",
+        "og_title": "Bismuth",
+        "og_image": null,
+        "canonical_url": "https://usebismuth.com/",
+        "language": "en",
+        "status_code": 200,
+        "content_type": "text/html; charset=utf-8",
+        "content_language": null,
+        "x_robots_tag": null
+      },
+      "warnings": []
+    },
+    {
+      "success": true,
+      "url": "https://usebismuth.com/apis/scraping",
+      "final_url": "https://usebismuth.com/apis/scraping/",
+      "depth": 1,
+      "markdown": "# Web Scraping API\n\nScrape any public URL and receive structured markdown, links, tables, and metadata.\n\nPrice: $0.02 USDC per call.",
+      "links": [],
+      "tables": [
+        {
+          "headers": ["Parameter", "Type", "Required", "Description"],
+          "rows": [
+            ["url", "string", "Yes", "Page to scrape (http/https, max 2048 chars)"],
+            ["wait_for", "string", "No", "CSS selector to wait for before extraction"]
+          ]
+        }
+      ],
+      "images": [],
+      "metadata": {
+        "title": "Web Scraping API \u2014 Bismuth",
+        "description": "Scrape any URL and return structured JSON.",
+        "og_title": null,
+        "og_image": null,
+        "canonical_url": "https://usebismuth.com/apis/scraping/",
+        "language": "en",
+        "status_code": 200,
+        "content_type": "text/html; charset=utf-8",
+        "content_language": null,
+        "x_robots_tag": null
+      },
+      "warnings": []
+    },
+    {
+      "success": false,
+      "url": "https://usebismuth.com/apis/file-conversion",
+      "depth": 1,
+      "error": "timeout",
+      "detail": "Page load timed out after 8.0s.",
+      "warnings": ["timeout"]
+    }
+  ]
+}
