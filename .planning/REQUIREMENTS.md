@@ -37,14 +37,14 @@ Requirements for v2.0 Bismuth Launch. Each maps to roadmap phases.
 
 ### Shallow Crawl
 
-- [ ] **CRAWL-01**: User can crawl a site via new x402_crawl_site MCP tool (POST /crawl endpoint)
-- [ ] **CRAWL-02**: Crawl respects max_pages parameter (default 10, max 15) and max_depth (default 2, max 5)
-- [ ] **CRAWL-03**: Crawl returns per-page extraction results in same schema as /scrape
-- [ ] **CRAWL-04**: All discovered URLs pass SSRF validation before being fetched (not just entry URL)
-- [ ] **CRAWL-05**: Crawl supports include/exclude path filters (e.g., `/blog/*`)
-- [ ] **CRAWL-06**: Crawl response includes metadata: pages_requested, pages_crawled, pages_skipped, reasons_skipped
-- [ ] **CRAWL-07**: Crawl handles partial success — returns results for pages crawled even if some fail
-- [ ] **CRAWL-08**: Free test endpoint at GET /crawl/test returns fixture data
+- [x] **CRAWL-01**: User can crawl a site via new x402_crawl_site MCP tool (POST /crawl endpoint)
+- [x] **CRAWL-02**: Crawl respects max_pages parameter (default 10, max 15) and max_depth (default 2, max 5)
+- [x] **CRAWL-03**: Crawl returns per-page extraction results in same schema as /scrape
+- [x] **CRAWL-04**: All discovered URLs pass SSRF validation before being fetched (not just entry URL)
+- [x] **CRAWL-05**: Crawl supports include/exclude path filters (e.g., `/blog/*`)
+- [x] **CRAWL-06**: Crawl response includes metadata: pages_requested, pages_crawled, pages_skipped, reasons_skipped
+- [x] **CRAWL-07**: Crawl handles partial success — returns results for pages crawled even if some fail
+- [x] **CRAWL-08**: Free test endpoint at GET /crawl/test returns fixture data
 
 ### MCP Server
 
@@ -112,14 +112,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONV-01 | Phase 14 | Complete |
 | CONV-02 | Phase 14 | Complete |
 | CONV-03 | Phase 14 | Complete |
-| CRAWL-01 | Phase 15 | Pending |
-| CRAWL-02 | Phase 15 | Pending |
-| CRAWL-03 | Phase 15 | Pending |
-| CRAWL-04 | Phase 15 | Pending |
-| CRAWL-05 | Phase 15 | Pending |
-| CRAWL-06 | Phase 15 | Pending |
-| CRAWL-07 | Phase 15 | Pending |
-| CRAWL-08 | Phase 15 | Pending |
+| CRAWL-01 | Phase 15 | Complete |
+| CRAWL-02 | Phase 15 | Complete |
+| CRAWL-03 | Phase 15 | Complete |
+| CRAWL-04 | Phase 15 | Complete |
+| CRAWL-05 | Phase 15 | Complete |
+| CRAWL-06 | Phase 15 | Complete |
+| CRAWL-07 | Phase 15 | Complete |
+| CRAWL-08 | Phase 15 | Complete |
 | MCP-01 | Phase 16 | Pending |
 | MCP-02 | Phase 16 | Pending |
 | MCP-03 | Phase 16 | Pending |
