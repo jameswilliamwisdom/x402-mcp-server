@@ -3,35 +3,35 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Bismuth Launch
 status: unknown
-last_updated: "2026-03-18T17:20:46.352Z"
+last_updated: "2026-03-18T17:57:55Z"
 progress:
-  total_phases: 15
+  total_phases: 16
   completed_phases: 15
-  total_plans: 30
-  completed_plans: 30
+  total_plans: 32
+  completed_plans: 31
 ---
 
 # State: Bismuth (x402 API Network)
 
 **Milestone:** v2.0 — Bismuth Launch
 **Last updated:** 2026-03-18
-**Overall status:** Phase 15 complete — 15-01 (shallow BFS crawl endpoint) done. CRAWL-01 through CRAWL-08 requirements satisfied.
+**Overall status:** Phase 16 in progress — 16-01 (source code updates) complete. x402_crawl_site registered, version 2.0.0, README updated. 16-02 (build and npm publish) pending.
 
 ## Current Position
 
-Phase: 15 of 16 (Shallow Site Crawl) — COMPLETE
-Plan: 15-01 complete (BFS crawl endpoint with SSRF-gated link discovery, path filters, partial results)
-Status: Phase 15 complete — advancing to Phase 16
-Last activity: 2026-03-18 — 15-01 complete: POST /crawl with BFS up to 15 pages, SSRF on every discovered URL, same-origin enforcement, include/exclude path filters, partial result accumulation, GET /crawl/test fixture endpoint
+Phase: 16 of 16 (MCP Server Update + npm Publish) — IN PROGRESS
+Plan: 16-01 complete, 16-02 pending (build and npm publish)
+Status: 16-01 complete — source code ready for build and publish
+Last activity: 2026-03-18 — 16-01 complete: x402_crawl_site tool registered with $0.10 pricing via APIS.scraping.baseUrl, version bumped to 2.0.0, README updated with 12 tools and Bismuth branding
 
-Progress: [██████████] 100% (1/1 plans in Phase 15 complete)
+Progress: [█████████░] 95% (1/2 plans in Phase 16 complete)
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-03-15)
 
 **Core value:** AI agents can discover and pay for useful APIs with zero integration friction
-**Current focus:** Phase 16 — MCP Publish
+**Current focus:** Phase 16-02 — Build and npm publish
 
 ## Accumulated Context
 
@@ -72,6 +72,10 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 - [Phase 15]: SSRF validation on every discovered URL before BFS enqueue, not just seed URL
 - [Phase 15]: Partial results returned on per-page failure; only browser 503 aborts entire crawl
 - [Phase 15]: GET /crawl/test registered before POST /crawl to avoid FastAPI path parameter collision
+- [Phase 16-01]: x402_crawl_site placed after x402_transcribe_audio — chronological addition order
+- [Phase 16-01]: Bismuth branding applied to H1 and tagline only — x402_ prefix, X402_PRIVATE_KEY, npx command unchanged
+- [Phase 16-01]: APIS.scraping description updated to "Scrape or crawl" — no new APIS dict entry for crawl
+- [Phase 16-01]: MCP-02/03 verified present from prior phases — no code changes needed
 
 ### Pending Todos
 
@@ -87,5 +91,5 @@ Full decision log in PROJECT.md Key Decisions table. Recent decisions for v2.0:
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Completed 15-01-PLAN.md — Phase 15 complete. POST /crawl with BFS up to 15 pages, SSRF-gated link discovery, same-origin enforcement, include/exclude path filters, partial result accumulation. GET /crawl/test fixture endpoint. Dockerfile updated.
+Stopped at: Completed 16-01-PLAN.md — x402_crawl_site tool registered, version 2.0.0, README updated with 12 tools and Bismuth branding. Ready for 16-02 (build and npm publish).
 Resume file: None

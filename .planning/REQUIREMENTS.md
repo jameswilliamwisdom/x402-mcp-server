@@ -48,11 +48,11 @@ Requirements for v2.0 Bismuth Launch. Each maps to roadmap phases.
 
 ### MCP Server
 
-- [ ] **MCP-01**: x402_crawl_site tool registered in src/index.ts with Zod schema
-- [ ] **MCP-02**: x402_send_email Zod schema updated to accept cc, bcc, attachments
-- [ ] **MCP-03**: x402_convert_file Zod schema updated to accept type: "docx"
+- [x] **MCP-01**: x402_crawl_site tool registered in src/index.ts with Zod schema
+- [x] **MCP-02**: x402_send_email Zod schema updated to accept cc, bcc, attachments
+- [x] **MCP-03**: x402_convert_file Zod schema updated to accept type: "docx"
 - [ ] **MCP-04**: Package version bumped to 2.0.0, published to npm
-- [ ] **MCP-05**: README updated with all 12 tools and Bismuth branding
+- [x] **MCP-05**: README updated with all 12 tools and Bismuth branding
 
 ## Future Requirements
 
@@ -120,11 +120,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CRAWL-06 | Phase 15 | Complete |
 | CRAWL-07 | Phase 15 | Complete |
 | CRAWL-08 | Phase 15 | Complete |
-| MCP-01 | Phase 16 | Pending |
-| MCP-02 | Phase 16 | Pending |
-| MCP-03 | Phase 16 | Pending |
+| MCP-01 | Phase 16 | Complete |
+| MCP-02 | Phase 16 | Complete |
+| MCP-03 | Phase 16 | Complete |
 | MCP-04 | Phase 16 | Pending |
-| MCP-05 | Phase 16 | Pending |
+| MCP-05 | Phase 16 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 29 total
