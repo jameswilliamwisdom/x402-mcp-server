@@ -14,12 +14,15 @@ import logging
 from io import StringIO
 from typing import Optional, Annotated
 from contextlib import asynccontextmanager
-from urllib.parse import urlparse, urljoin
+from collections import deque
+import fnmatch
+import posixpath
+from urllib.parse import urlparse, urljoin, urlunsplit
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pydantic_core import Url
 from pydantic import UrlConstraints
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -48,6 +51,9 @@ ALLOWED_SCHEMES = {"http", "https"}
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font", "websocket"}
 
 FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "fixture.json")
+CRAWL_FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "crawl_fixture.json")
+CRAWL_PAGE_BUDGET_S = 6.0
+CRAWL_TOTAL_BUDGET_S = 90.0
 
 
 # =============================================================================
@@ -215,7 +221,7 @@ class SSRFMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request, call_next):
-        if request.method == "POST" and request.url.path == "/scrape":
+        if request.method == "POST" and request.url.path in ("/scrape", "/crawl"):
             try:
                 body_bytes = await request.body()
                 body = json.loads(body_bytes)
@@ -272,6 +278,62 @@ class ScrapeRequest(BaseModel):
         max_length=500,
         description="CSS selector to wait for before extracting — for SPAs (e.g. '.article-body')",
     )
+
+
+class CrawlRequest(BaseModel):
+    url: BoundedHttpUrl = Field(
+        ..., description="Seed URL to begin crawling (http/https, max 2048 chars)"
+    )
+    max_pages: int = Field(default=10, ge=1, le=15)
+    max_depth: int = Field(default=2, ge=1, le=5)
+    include_paths: list[str] = Field(default_factory=list, max_length=20)
+    exclude_paths: list[str] = Field(default_factory=list, max_length=20)
+
+    @field_validator("include_paths", "exclude_paths", mode="before")
+    @classmethod
+    def validate_patterns(cls, v):
+        for pat in v:
+            if len(pat) > 200:
+                raise ValueError("Path filter pattern must be <= 200 characters")
+        return v
+
+
+# =============================================================================
+# Crawl Helpers
+# =============================================================================
+
+def normalize_url(url: str) -> str:
+    """Normalize URL for deduplication: lowercase scheme+host, strip fragment,
+    normalize path (collapse ./..), preserve query string."""
+    p = urlparse(url)
+    path = posixpath.normpath(p.path) if p.path else "/"
+    if p.path.endswith("/") and not path.endswith("/"):
+        path += "/"
+    return urlunsplit((p.scheme.lower(), p.netloc.lower(), path, p.query, ""))
+
+
+def _passes_path_filter(path: str, include_paths: list[str], exclude_paths: list[str]) -> bool:
+    """Check URL path against include/exclude glob patterns.
+    posixpath.normpath prevents traversal bypass (e.g. /blog/../admin/config)."""
+    normalized = posixpath.normpath(path)
+    if include_paths:
+        # Expand "/blog/*" to also match "/blog" (bare prefix without trailing content)
+        expanded = []
+        for pat in include_paths:
+            expanded.append(pat)
+            if pat.endswith("/*"):
+                expanded.append(pat[:-2])
+        if not any(fnmatch.fnmatch(normalized, ep) for ep in expanded):
+            return False
+    if exclude_paths:
+        expanded_ex = []
+        for pat in exclude_paths:
+            expanded_ex.append(pat)
+            if pat.endswith("/*"):
+                expanded_ex.append(pat[:-2])
+        if any(fnmatch.fnmatch(normalized, ep) for ep in expanded_ex):
+            return False
+    return True
 
 
 # =============================================================================
