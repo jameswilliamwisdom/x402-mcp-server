@@ -50,7 +50,7 @@ const APIS = {
         name: "Scraping API",
         baseUrl: "https://x402-scraping-api-production.up.railway.app",
         price: "$0.02",
-        description: "Scrape any URL and return structured JSON: markdown, links, tables, images, metadata",
+        description: "Scrape or crawl any URL and return structured JSON: markdown, links, tables, images, metadata",
         usesX402: true,
     },
     conversion: {
@@ -156,7 +156,7 @@ async function checkHealth(baseUrl) {
 // ─── MCP Server ──────────────────────────────────────────────────────────────
 const server = new McpServer({
     name: "x402-api-network",
-    version: "1.1.0",
+    version: "2.0.0",
 });
 // ─── Tool: x402_network_info (FREE) ─────────────────────────────────────────
 server.tool("x402_network_info", `List all APIs in the x402 API Network with pricing, status, and capabilities.
@@ -385,7 +385,8 @@ Returns: comprehensive analysis with market data, news, development activity, an
 server.tool("x402_send_email", `Send a transactional email via Resend.
 Price: $0.01 USDC per email (paid mode) | Free test: returns fixture data.
 
-Supports plain text or HTML body. Per-wallet daily limit: 10 emails. Per-domain daily limit: 5 emails.
+Supports plain text or HTML body, CC/BCC recipients, and file attachments (base64-encoded, max 25MB per file).
+Per-wallet daily limit: 10 emails. Per-domain daily limit: 5 emails (applies to all recipients including CC/BCC).
 Without X402_PRIVATE_KEY, only the free test endpoint is available.
 
 Returns: message_id from Resend.`, {
@@ -405,6 +406,16 @@ Returns: message_id from Resend.`, {
         .email()
         .optional()
         .describe("Optional reply-to address"),
+    cc: z.array(z.string().email()).optional()
+        .describe("CC recipients — list of email addresses"),
+    bcc: z.array(z.string().email()).optional()
+        .describe("BCC recipients — list of email addresses"),
+    attachments: z.array(z.object({
+        filename: z.string().describe("Filename including extension (e.g. 'report.pdf')"),
+        content: z.string().describe("Base64-encoded file content (max 25MB decoded)"),
+        content_type: z.string().optional()
+            .describe("MIME type — auto-derived from filename if omitted"),
+    })).optional().describe("File attachments (base64-encoded, max 25MB pre-encoding per file)"),
 }, async (params) => {
     const base = APIS.email.baseUrl;
     try {
@@ -417,6 +428,12 @@ Returns: message_id from Resend.`, {
             };
             if (params.reply_to)
                 payload.reply_to = params.reply_to;
+            if (params.cc)
+                payload.cc = params.cc;
+            if (params.bcc)
+                payload.bcc = params.bcc;
+            if (params.attachments)
+                payload.attachments = params.attachments;
             const data = await apiPost(base, "/send", payload, true);
             return textResult({
                 mode: "paid",
@@ -474,21 +491,22 @@ Returns: markdown text, extracted links, tables, images, page metadata, and succ
     }
 });
 // ─── Tool: x402_convert_file ────────────────────────────────────────────────
-server.tool("x402_convert_file", `Convert files between formats — image resize/reformat, CSV to JSON, or HTML to PDF.
+server.tool("x402_convert_file", `Convert files between formats — image resize/reformat, CSV to JSON, HTML to PDF, or DOCX to PDF.
 Price: $0.02 USDC per conversion (paid mode) | Free test: returns fixture data.
 
 Supported conversions:
 - image: resize/reformat an image from a URL (Pillow) — outputs base64-encoded bytes
 - csv: convert a CSV URL to JSON array
 - html_pdf: render HTML from a URL to PDF — outputs base64-encoded bytes
+- docx: convert a DOCX document URL to PDF — outputs base64-encoded bytes (mammoth + WeasyPrint, content-fidelity not layout-preserving)
 
 Input limit: 10MB source file. Output limit: 8MB (before base64 encoding).
 Without X402_PRIVATE_KEY, only the free test endpoint is available.
 
 Returns: base64-encoded output bytes with MIME type, or JSON array for csv type.`, {
     url: z.string().url().describe("URL of the file to convert (public, http/https, max 10MB)"),
-    type: z.enum(["image", "csv", "html_pdf"])
-        .describe("Conversion type: image (resize/reformat), csv (CSV to JSON), html_pdf (HTML to PDF)"),
+    type: z.enum(["image", "csv", "html_pdf", "docx"])
+        .describe("Conversion type: image (resize/reformat), csv (CSV to JSON), html_pdf (HTML to PDF), docx (DOCX to PDF)"),
     format: z.enum(["jpeg", "png", "webp", "gif"]).optional()
         .describe("Output image format (only for type='image', default: jpeg)"),
     width: z.number().int().min(1).max(8000).optional()
@@ -605,6 +623,57 @@ Returns: transcript text, detected language, language confidence, duration, and 
             return textResult({
                 mode: "free_test",
                 note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for real audio transcription.",
+                ...data,
+            });
+        }
+    }
+    catch (err) {
+        return errorResult(err.message);
+    }
+});
+// ─── Tool: x402_crawl_site ──────────────────────────────────────────────────
+server.tool("x402_crawl_site", `Crawl a website via BFS and return per-page extraction results (markdown, links, tables, images, metadata).
+Price: $0.10 USDC per crawl (paid mode) | Free test: returns fixture data.
+
+Crawls up to max_pages pages starting from the seed URL, up to max_depth link hops deep.
+Same extraction pipeline as x402_scrape_url — each page returns markdown, links, tables, images, metadata.
+Optional include_paths/exclude_paths glob filters (e.g. '/blog/*') restrict which URLs are followed.
+Hard limits: max 15 pages, max depth 5. Response includes pages_requested, pages_crawled, pages_skipped.
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: seed_url, pages_requested, pages_crawled, pages_skipped, reasons_skipped, results array.`, {
+    url: z.string().url()
+        .describe("Seed URL to begin crawling (http/https, max 2048 chars)"),
+    max_pages: z.number().int().min(1).max(15).default(10)
+        .describe("Maximum pages to crawl (1-15, default: 10)"),
+    max_depth: z.number().int().min(1).max(5).default(2)
+        .describe("Maximum link depth from seed URL (1-5, default: 2)"),
+    include_paths: z.array(z.string()).max(20).optional()
+        .describe("Only follow URLs matching these path glob patterns (e.g. '/blog/*', max 20)"),
+    exclude_paths: z.array(z.string()).max(20).optional()
+        .describe("Skip URLs matching these path glob patterns (e.g. '/admin/*', max 20)"),
+}, async (params) => {
+    const base = APIS.scraping.baseUrl;
+    try {
+        const usePaid = !!PRIVATE_KEY;
+        if (usePaid) {
+            const payload = {
+                url: params.url,
+                max_pages: params.max_pages,
+                max_depth: params.max_depth,
+            };
+            if (params.include_paths)
+                payload.include_paths = params.include_paths;
+            if (params.exclude_paths)
+                payload.exclude_paths = params.exclude_paths;
+            const data = await apiPost(base, "/crawl", payload, true);
+            return textResult({ mode: "paid", cost: "$0.10", ...data });
+        }
+        else {
+            const data = await apiGet(base, "/crawl/test");
+            return textResult({
+                mode: "free_test",
+                note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for live crawling.",
                 ...data,
             });
         }

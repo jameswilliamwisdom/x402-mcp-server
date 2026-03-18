@@ -17,7 +17,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "postbuild": "node -e \"const fs=require('fs'),f='dist/index.js',c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/'))fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c)\"",
+    "postbuild": "node -e \"const fs=require('fs'),f='dist/index.js',c=fs.readFileSync(f,'utf8');if(!c.startsWith('#!/'))fs.writeFileSync(f,'#!/usr/bin/env node\\n'+c);const d='dist/index.d.ts',t=fs.readFileSync(d,'utf8');if(t.startsWith('#!/'))fs.writeFileSync(d,t.replace(/^#!.*\\n/,''))\"",
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js"
   },

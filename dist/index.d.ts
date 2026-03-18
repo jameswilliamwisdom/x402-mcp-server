@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * x402 API Network — MCP Server
  *
