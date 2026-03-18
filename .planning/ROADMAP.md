@@ -139,7 +139,7 @@ See [v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md) for full details.
 | 12. API Documentation | 2/2 | Complete    | 2026-03-17 | - |
 | 13. Email Attachments + CC/BCC | 2/2 | Complete    | 2026-03-17 | - |
 | 14. DOCX-to-PDF Conversion | 2/2 | Complete   | 2026-03-17 | - |
-| 15. Shallow Site Crawl | 1/1 | Complete   | 2026-03-18 | - |
+| 15. Shallow Site Crawl | 1/1 | Complete    | 2026-03-18 | - |
 | 16. MCP Server Update + npm Publish | v2.0 | 0/TBD | Not started | - |
 
 ---
