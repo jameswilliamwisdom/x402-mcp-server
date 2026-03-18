@@ -1,7 +1,7 @@
 {
   "name": "x402-mcp-server",
-  "version": "1.1.0",
-  "description": "MCP server for the x402 API Network — screenshot, PDF, crypto sentiment, web scraping, file conversion, web search, email, and audio transcription tools with USDC micropayments on Base",
+  "version": "2.0.0",
+  "description": "MCP server for the x402 API Network — screenshot, PDF, crypto sentiment, web scraping, shallow site crawl, file conversion, web search, email, and audio transcription tools with USDC micropayments on Base",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -46,7 +46,9 @@
     "email",
     "web-search",
     "file-conversion",
-    "transcription"
+    "transcription",
+    "site-crawl",
+    "bismuth"
   ],
   "license": "MIT"
 }

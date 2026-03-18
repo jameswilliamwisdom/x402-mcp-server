@@ -54,7 +54,7 @@ const APIS = {
     name: "Scraping API",
     baseUrl: "https://x402-scraping-api-production.up.railway.app",
     price: "$0.02",
-    description: "Scrape any URL and return structured JSON: markdown, links, tables, images, metadata",
+    description: "Scrape or crawl any URL and return structured JSON: markdown, links, tables, images, metadata",
     usesX402: true,
   },
   conversion: {
@@ -185,7 +185,7 @@ async function checkHealth(baseUrl: string): Promise<{
 
 const server = new McpServer({
   name: "x402-api-network",
-  version: "1.1.0",
+  version: "2.0.0",
 });
 
 // ─── Tool: x402_network_info (FREE) ─────────────────────────────────────────
@@ -728,6 +728,60 @@ Returns: transcript text, detected language, language confidence, duration, and 
         return textResult({
           mode: "free_test",
           note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for real audio transcription.",
+          ...data,
+        });
+      }
+    } catch (err: any) {
+      return errorResult(err.message);
+    }
+  }
+);
+
+// ─── Tool: x402_crawl_site ──────────────────────────────────────────────────
+
+server.tool(
+  "x402_crawl_site",
+  `Crawl a website via BFS and return per-page extraction results (markdown, links, tables, images, metadata).
+Price: $0.10 USDC per crawl (paid mode) | Free test: returns fixture data.
+
+Crawls up to max_pages pages starting from the seed URL, up to max_depth link hops deep.
+Same extraction pipeline as x402_scrape_url — each page returns markdown, links, tables, images, metadata.
+Optional include_paths/exclude_paths glob filters (e.g. '/blog/*') restrict which URLs are followed.
+Hard limits: max 15 pages, max depth 5. Response includes pages_requested, pages_crawled, pages_skipped.
+Without X402_PRIVATE_KEY, only the free test endpoint is available.
+
+Returns: seed_url, pages_requested, pages_crawled, pages_skipped, reasons_skipped, results array.`,
+  {
+    url: z.string().url()
+      .describe("Seed URL to begin crawling (http/https, max 2048 chars)"),
+    max_pages: z.number().int().min(1).max(15).default(10)
+      .describe("Maximum pages to crawl (1-15, default: 10)"),
+    max_depth: z.number().int().min(1).max(5).default(2)
+      .describe("Maximum link depth from seed URL (1-5, default: 2)"),
+    include_paths: z.array(z.string()).max(20).optional()
+      .describe("Only follow URLs matching these path glob patterns (e.g. '/blog/*', max 20)"),
+    exclude_paths: z.array(z.string()).max(20).optional()
+      .describe("Skip URLs matching these path glob patterns (e.g. '/admin/*', max 20)"),
+  },
+  async (params) => {
+    const base = APIS.scraping.baseUrl;
+    try {
+      const usePaid = !!PRIVATE_KEY;
+      if (usePaid) {
+        const payload: Record<string, unknown> = {
+          url: params.url,
+          max_pages: params.max_pages,
+          max_depth: params.max_depth,
+        };
+        if (params.include_paths) payload.include_paths = params.include_paths;
+        if (params.exclude_paths) payload.exclude_paths = params.exclude_paths;
+        const data = await apiPost(base, "/crawl", payload, true);
+        return textResult({ mode: "paid", cost: "$0.10", ...data });
+      } else {
+        const data = await apiGet(base, "/crawl/test");
+        return textResult({
+          mode: "free_test",
+          note: "Free test — returns fixture data. Set X402_PRIVATE_KEY for live crawling.",
           ...data,
         });
       }
