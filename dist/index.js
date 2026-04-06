@@ -11,150 +11,9 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { wrapFetchWithPayment } from "x402-fetch";
-import { createWalletClient, http } from "viem";
-import { privateKeyToAccount } from "viem/accounts";
-import { base as baseChain } from "viem/chains";
-// ─── API Endpoints ───────────────────────────────────────────────────────────
-const APIS = {
-    screenshot: {
-        name: "Screenshot API",
-        baseUrl: "https://usdc-screenshot-api-production.up.railway.app",
-        price: "$0.01",
-        description: "Capture website screenshots as base64 images",
-        // v2.1.0 supports x402 via GET /screenshot with X-Payment header
-        usesX402: true,
-    },
-    pdf: {
-        name: "PDF Extraction API",
-        baseUrl: "https://pdf-api-production-cf1e.up.railway.app",
-        price: "$0.01",
-        description: "Extract text content from PDF documents",
-        usesX402: true,
-    },
-    sentiment: {
-        name: "Crypto Sentiment API",
-        baseUrl: "https://crypto-sentiment-api-production-0ff4.up.railway.app",
-        price: "$0.01–$0.10",
-        description: "Real-time crypto market sentiment analysis",
-        usesX402: true,
-    },
-    email: {
-        name: "Email API",
-        baseUrl: "https://x402-email-api-production.up.railway.app",
-        price: "$0.01",
-        description: "Send transactional emails via Resend",
-        usesX402: true,
-    },
-    scraping: {
-        name: "Scraping API",
-        baseUrl: "https://x402-scraping-api-production.up.railway.app",
-        price: "$0.02",
-        description: "Scrape or crawl any URL and return structured JSON: markdown, links, tables, images, metadata",
-        usesX402: true,
-    },
-    conversion: {
-        name: "Conversion API",
-        baseUrl: "https://x402-conversion-api-production.up.railway.app",
-        price: "$0.02",
-        description: "Convert files: image resize/reformat, CSV to JSON, HTML to PDF",
-        usesX402: true,
-    },
-    search: {
-        name: "Search API",
-        baseUrl: "https://x402-search-api-production.up.railway.app",
-        price: "$0.01",
-        description: "Web search via Tavily — ranked results with title, URL, snippet, score",
-        usesX402: true,
-    },
-    transcription: {
-        name: "Transcription API",
-        baseUrl: "https://transcribe.jameswisdom.ink",
-        price: "$0.05",
-        description: "Transcribe audio from any URL — auto language detection, word timestamps, 25MB/10min limits",
-        usesX402: true,
-    },
-};
-// ─── Config ──────────────────────────────────────────────────────────────────
-const PRIVATE_KEY = process.env.X402_PRIVATE_KEY;
-// ─── Payment-wrapped fetch ──────────────────────────────────────────────────
-// Use `any` for x402 interop — their types don't perfectly align with viem's strict generics
-let _paidFetch = null;
-let _walletClient = null;
-function getPaidFetch() {
-    if (_paidFetch)
-        return _paidFetch;
-    if (!PRIVATE_KEY) {
-        throw new Error("X402_PRIVATE_KEY not configured. Set it to enable paid API access.");
-    }
-    const account = privateKeyToAccount(PRIVATE_KEY);
-    _walletClient = createWalletClient({
-        account,
-        chain: baseChain,
-        transport: http(),
-    });
-    // maxValue: 0.10 USDC (100000 in 6-decimal units) — safety cap per request
-    _paidFetch = wrapFetchWithPayment(fetch, _walletClient, BigInt(100000));
-    return _paidFetch;
-}
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function textResult(data) {
-    const text = typeof data === "string" ? data : JSON.stringify(data, null, 2);
-    return { content: [{ type: "text", text }] };
-}
-function errorResult(message) {
-    return {
-        content: [{ type: "text", text: `Error: ${message}` }],
-        isError: true,
-    };
-}
-async function apiGet(baseUrl, path, usePayment = false) {
-    const f = usePayment ? getPaidFetch() : fetch;
-    const res = await f(`${baseUrl}${path}`);
-    if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw new Error(`API ${res.status}: ${body}`);
-    }
-    return res.json();
-}
-async function apiPost(baseUrl, path, body, usePayment = false) {
-    const f = usePayment ? getPaidFetch() : fetch;
-    const res = await f(`${baseUrl}${path}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        throw new Error(`API ${res.status}: ${text}`);
-    }
-    return res.json();
-}
-async function checkHealth(baseUrl) {
-    try {
-        const res = await fetch(`${baseUrl}/health`, {
-            signal: AbortSignal.timeout(3000),
-        });
-        if (res.ok) {
-            const data = await res.json();
-            return { healthy: true, details: data };
-        }
-        // Fallback to /
-        const rootRes = await fetch(`${baseUrl}/`, {
-            signal: AbortSignal.timeout(3000),
-        });
-        if (rootRes.ok) {
-            const data = await rootRes.json();
-            return { healthy: true, details: data };
-        }
-        return { healthy: false, error: `HTTP ${res.status}` };
-    }
-    catch (err) {
-        return { healthy: false, error: err.message };
-    }
-}
+import { APIS, getPrivateKey, apiGet, apiPost, checkHealth, textResult, errorResult, } from "./helpers.js";
 // ─── MCP Server ──────────────────────────────────────────────────────────────
-const server = new McpServer({
+export const server = new McpServer({
     name: "x402-api-network",
     version: "2.0.0",
 });
@@ -163,7 +22,7 @@ server.tool("x402_network_info", `List all APIs in the x402 API Network with pri
 This tool is FREE — no payment required.
 
 The x402 API Network provides pay-per-use APIs accepting USDC micropayments on Base (L2 Ethereum).`, {}, async () => {
-    const walletConfigured = !!PRIVATE_KEY;
+    const walletConfigured = !!getPrivateKey();
     const healthChecks = await Promise.allSettled(Object.entries(APIS).map(async ([key, api]) => {
         const health = await checkHealth(api.baseUrl);
         return { key, ...api, ...health };
@@ -231,7 +90,7 @@ Returns: base64 PNG/JPEG/WebP image data.`, {
 }, async (params) => {
     const base = APIS.screenshot.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         const query = new URLSearchParams({
             url: params.url,
             width: String(params.width),
@@ -279,7 +138,7 @@ Returns: extracted text, page count, and metadata.`, {
 }, async (params) => {
     const base = APIS.pdf.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         const endpoint = usePaid ? "/extract" : "/test/extract";
         const data = await apiPost(base, endpoint, { url: params.pdf_url }, usePaid);
         return textResult({
@@ -307,7 +166,7 @@ Returns: sentiment score (-1 to 1), confidence, sources, and analysis.`, {
 }, async (params) => {
     const base = APIS.sentiment.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         const endpoint = usePaid
             ? `/sentiment/${params.coin.toLowerCase()}`
             : `/test/sentiment/${params.coin.toLowerCase()}`;
@@ -333,7 +192,7 @@ Without X402_PRIVATE_KEY, only the free test endpoint is available.
 Returns: market-wide sentiment data, top movers, and trend analysis.`, {}, async () => {
     const base = APIS.sentiment.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         const endpoint = usePaid ? "/market/overview" : "/test/market/overview";
         const data = await apiGet(base, endpoint, usePaid);
         return textResult({
@@ -365,7 +224,7 @@ Returns: comprehensive analysis with market data, news, development activity, an
 }, async (params) => {
     const base = APIS.sentiment.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         const endpoint = usePaid
             ? `/intelligence/${params.coin.toLowerCase()}`
             : `/test/intelligence/${params.coin.toLowerCase()}`;
@@ -419,7 +278,7 @@ Returns: message_id from Resend.`, {
 }, async (params) => {
     const base = APIS.email.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         if (usePaid) {
             const payload = {
                 to: params.to,
@@ -469,7 +328,7 @@ Returns: markdown text, extracted links, tables, images, page metadata, and succ
 }, async (params) => {
     const base = APIS.scraping.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         if (usePaid) {
             const payload = { url: params.url };
             if (params.wait_for)
@@ -516,7 +375,7 @@ Returns: base64-encoded output bytes with MIME type, or JSON array for csv type.
 }, async (params) => {
     const base = APIS.conversion.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         if (usePaid) {
             const payload = { type: params.type, url: params.url };
             if (params.format !== undefined)
@@ -562,7 +421,7 @@ Returns: query, results array (title, url, snippet, score), optional answer fiel
 }, async (params) => {
     const base = APIS.search.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         if (usePaid) {
             const payload = {
                 query: params.query,
@@ -607,7 +466,7 @@ Returns: transcript text, detected language, language confidence, duration, and 
 }, async (params) => {
     const base = APIS.transcription.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         if (usePaid) {
             const payload = {
                 url: params.url,
@@ -655,7 +514,7 @@ Returns: seed_url, pages_requested, pages_crawled, pages_skipped, reasons_skippe
 }, async (params) => {
     const base = APIS.scraping.baseUrl;
     try {
-        const usePaid = !!PRIVATE_KEY;
+        const usePaid = !!getPrivateKey();
         if (usePaid) {
             const payload = {
                 url: params.url,
@@ -687,7 +546,13 @@ async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
 }
-main().catch((err) => {
-    console.error("Fatal:", err);
-    process.exit(1);
-});
+// Only auto-connect when run directly (not when imported for tests)
+const isDirectRun = typeof process !== "undefined" &&
+    process.argv[1] &&
+    (process.argv[1].endsWith("/index.js") || process.argv[1].endsWith("/index.ts"));
+if (isDirectRun) {
+    main().catch((err) => {
+        console.error("Fatal:", err);
+        process.exit(1);
+    });
+}

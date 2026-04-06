@@ -7,4 +7,5 @@
  * Payment is handled transparently via x402-fetch when X402_PRIVATE_KEY
  * is configured. Without a key, only free test endpoints are available.
  */
-export {};
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+export declare const server: McpServer;
