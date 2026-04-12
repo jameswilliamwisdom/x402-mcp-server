@@ -39,3 +39,25 @@
 
 ---
 
+
+## v2.0 Bismuth Launch (Shipped: 2026-04-06)
+
+**Phases completed:** 6 phases (11-16), 11 plans
+**Timeline:** 21 days (2026-03-16 to 2026-04-06)
+**Requirements:** 29/29 satisfied
+**Commits:** 41 | **Files:** 55 changed | **Lines:** +10,170
+
+**Key accomplishments:**
+- Rebranded to Bismuth — site content, usebismuth.com domain, Cloudflare Tunnel HTTPS, public deployment with zero browser security warnings
+- Complete API documentation for all 5 utility APIs in Starlight with parameter tables, curl + MCP examples, error codes, and free test endpoint links
+- Email API extended with CC/BCC recipients and base64 file attachments (25MB cap) with decoded-byte size validation and domain rate limiting across all recipients
+- DOCX-to-PDF conversion via mammoth + WeasyPrint pipeline — semantic fidelity, zero Docker size cost
+- Shallow site crawl: BFS with 15-page sync cap, include/exclude path filters, SSRF validation on every discovered URL, partial results on per-page failure
+- Published x402-mcp-server@2.0.0 to npm — 12 tools across 8 APIs, Bismuth branding, test suite with 35 tests added post-publish
+
+**Archives:**
+- [v2.0-ROADMAP.md](milestones/v2.0-ROADMAP.md)
+- [v2.0-REQUIREMENTS.md](milestones/v2.0-REQUIREMENTS.md)
+
+---
+
