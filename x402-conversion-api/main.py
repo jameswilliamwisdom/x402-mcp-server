@@ -56,6 +56,17 @@ MIME_TYPES = {
 
 
 # =============================================================================
+# Deprecation Notice — v2 sunsets 2026-05-23
+# =============================================================================
+
+DEPRECATION = {
+    "notice": "x402-mcp-server v2 is deprecated. Sunsets 2026-05-23. Migrate to Bismuth.",
+    "sunset_date": "2026-05-23",
+    "migration_url": "https://bismuth.one/migrate",
+}
+
+
+# =============================================================================
 # SSRF Validation
 # =============================================================================
 
@@ -404,6 +415,19 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 
 # =============================================================================
+# Deprecation Middleware — adds sunset headers to every response
+# =============================================================================
+
+@app.middleware("http")
+async def add_deprecation_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Deprecation"] = "true"
+    response.headers["X-Sunset-Date"] = DEPRECATION["sunset_date"]
+    response.headers["Link"] = f'<{DEPRECATION["migration_url"]}>; rel="sunset"'
+    return response
+
+
+# =============================================================================
 # Request Models — Pydantic Discriminated Union
 # =============================================================================
 
@@ -465,13 +489,14 @@ async def info():
             "GET /convert/test": "Free fixture response",
             "GET /health": "Health check",
         },
+        "_deprecation": DEPRECATION,
     }
 
 
 @app.get("/health")
 async def health():
     """Health check — always returns HTTP 200."""
-    return {"status": "healthy"}
+    return {"status": "healthy", "_deprecation": DEPRECATION}
 
 
 @app.get("/convert/test")
@@ -482,7 +507,7 @@ async def convert_test(request: Request):
     Rate limited at 100 requests/hour per IP.
     Use POST /convert with x402 payment for live file conversion.
     """
-    return load_fixture()
+    return {**load_fixture(), "_deprecation": DEPRECATION}
 
 
 @app.post("/convert")
@@ -577,4 +602,5 @@ async def convert(request: Request, body: ConvertRequest):
         "mime_type": mime_type,
         "data": encoded,
         "warnings": [],
+        "_deprecation": DEPRECATION,
     }
