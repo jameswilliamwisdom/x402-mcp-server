@@ -37,6 +37,17 @@ FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "fixture.json")
 
 
 # =============================================================================
+# Deprecation Notice — v2 sunsets 2026-05-23
+# =============================================================================
+
+DEPRECATION = {
+    "notice": "x402-mcp-server v2 is deprecated. Sunsets 2026-05-23. Migrate to Bismuth.",
+    "sunset_date": "2026-05-23",
+    "migration_url": "https://bismuth.one/migrate",
+}
+
+
+# =============================================================================
 # Per-Wallet Daily Rate Limiter
 # =============================================================================
 
@@ -188,6 +199,19 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 
 # =============================================================================
+# Deprecation Middleware — adds sunset headers to every response
+# =============================================================================
+
+@app.middleware("http")
+async def add_deprecation_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Deprecation"] = "true"
+    response.headers["X-Sunset-Date"] = DEPRECATION["sunset_date"]
+    response.headers["Link"] = f'<{DEPRECATION["migration_url"]}>; rel="sunset"'
+    return response
+
+
+# =============================================================================
 # Pydantic Request Model
 # =============================================================================
 
@@ -220,6 +244,7 @@ async def root():
             "GET /search/test": "Free fixture response",
             "GET /health": "Health check",
         },
+        "_deprecation": DEPRECATION,
     }
 
 
@@ -228,6 +253,7 @@ async def health():
     return {
         "status": "healthy",
         "tavily": "configured" if tavily_client else "not configured",
+        "_deprecation": DEPRECATION,
     }
 
 
@@ -235,7 +261,7 @@ async def health():
 @limiter.limit("100/hour")
 async def search_test(request: Request):
     with open(FIXTURE_PATH) as f:
-        return json.load(f)
+        return {**json.load(f), "_deprecation": DEPRECATION}
 
 
 @app.post("/search")
@@ -263,4 +289,4 @@ async def search(request: Request, body: SearchRequest):
         logger.error(f"Search failed: {e}")
         raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
-    return result
+    return {**result, "_deprecation": DEPRECATION}
