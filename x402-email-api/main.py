@@ -46,6 +46,17 @@ MIME_TYPE_PATTERN = re.compile(
 
 
 # =============================================================================
+# Deprecation Notice — v2 sunsets 2026-05-23
+# =============================================================================
+
+DEPRECATION = {
+    "notice": "x402-mcp-server v2 is deprecated. Sunsets 2026-05-23. Migrate to Bismuth.",
+    "sunset_date": "2026-05-23",
+    "migration_url": "https://bismuth.one/migrate",
+}
+
+
+# =============================================================================
 # Per-Wallet Daily Rate Limiter (wallet-level + domain-level)
 # =============================================================================
 
@@ -348,6 +359,19 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 
 
 # =============================================================================
+# Deprecation Middleware — adds sunset headers to every response
+# =============================================================================
+
+@app.middleware("http")
+async def add_deprecation_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Deprecation"] = "true"
+    response.headers["X-Sunset-Date"] = DEPRECATION["sunset_date"]
+    response.headers["Link"] = f'<{DEPRECATION["migration_url"]}>; rel="sunset"'
+    return response
+
+
+# =============================================================================
 # Route Handlers
 # =============================================================================
 
@@ -363,6 +387,7 @@ async def root():
             "GET /send/test": "Free test response (no real email sent)",
             "GET /health": "Health check",
         },
+        "_deprecation": DEPRECATION,
     }
 
 
@@ -371,13 +396,17 @@ async def health():
     return {
         "status": "healthy",
         "resend": "configured" if resend.api_key else "not configured",
+        "_deprecation": DEPRECATION,
     }
 
 
 @app.get("/send/test")
 @limiter.limit("100/hour")
 async def send_test(request: Request):
-    return {"message_id": "test_00000000-0000-0000-0000-000000000000"}
+    return {
+        "message_id": "test_00000000-0000-0000-0000-000000000000",
+        "_deprecation": DEPRECATION,
+    }
 
 
 @app.post("/send")
@@ -403,4 +432,4 @@ def send_email(request: Request, body: EmailRequest):
         body.subject,
         result["id"],
     )
-    return {"message_id": result["id"]}
+    return {"message_id": result["id"], "_deprecation": DEPRECATION}
