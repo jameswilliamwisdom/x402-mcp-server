@@ -57,17 +57,6 @@ CRAWL_TOTAL_BUDGET_S = 90.0
 
 
 # =============================================================================
-# Deprecation Notice — v2 sunsets 2026-05-23
-# =============================================================================
-
-DEPRECATION = {
-    "notice": "x402-mcp-server v2 is deprecated. Sunsets 2026-05-23. Migrate to Bismuth.",
-    "sunset_date": "2026-05-23",
-    "migration_url": "https://bismuth.one/migrate",
-}
-
-
-# =============================================================================
 # SSRF Validation
 # =============================================================================
 
@@ -268,19 +257,6 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
         status_code=429,
         content={"detail": "Rate limit exceeded. Try again later."},
     )
-
-
-# =============================================================================
-# Deprecation Middleware — adds sunset headers to every response
-# =============================================================================
-
-@app.middleware("http")
-async def add_deprecation_headers(request: Request, call_next):
-    response = await call_next(request)
-    response.headers["X-Deprecation"] = "true"
-    response.headers["X-Sunset-Date"] = DEPRECATION["sunset_date"]
-    response.headers["Link"] = f'<{DEPRECATION["migration_url"]}>; rel="sunset"'
-    return response
 
 
 # =============================================================================
@@ -704,7 +680,6 @@ async def info():
             "GET /crawl/test": "Free crawl fixture response — demonstrates crawl response schema",
             "GET /health": "Health check (browser status)",
         },
-        "_deprecation": DEPRECATION,
     }
 
 
@@ -714,7 +689,6 @@ async def health():
     return {
         "status": "healthy",
         "browser": browser is not None and browser.is_connected(),
-        "_deprecation": DEPRECATION,
     }
 
 
@@ -726,7 +700,7 @@ async def scrape_test(request: Request):
     Rate limited at 100 requests/hour per IP.
     Use POST /scrape with x402 payment for live page scraping.
     """
-    return {**load_fixture(), "_deprecation": DEPRECATION}
+    return load_fixture()
 
 
 @app.post("/scrape")
@@ -837,7 +811,6 @@ async def scrape(request: Request, body: ScrapeRequest):
         "images": extracted["images"],
         "metadata": extracted["metadata"],
         "warnings": warnings,
-        "_deprecation": DEPRECATION,
     }
 
 
@@ -849,7 +822,7 @@ async def scrape(request: Request, body: ScrapeRequest):
 @limiter.limit("100/hour")
 async def crawl_test(request: Request):
     """Free test endpoint — returns fixture data (no live crawl, no payment required)."""
-    return {**load_crawl_fixture(), "_deprecation": DEPRECATION}
+    return load_crawl_fixture()
 
 
 @app.post("/crawl")
@@ -871,14 +844,13 @@ async def crawl(request: Request, body: CrawlRequest):
     seed_url = str(body.url)
 
     try:
-        result = await run_bfs_crawl(
+        return await run_bfs_crawl(
             seed_url=seed_url,
             max_pages=body.max_pages,
             max_depth=body.max_depth,
             include_paths=body.include_paths,
             exclude_paths=body.exclude_paths,
         )
-        return {**result, "_deprecation": DEPRECATION}
     except HTTPException:
         raise
     except Exception as e:
