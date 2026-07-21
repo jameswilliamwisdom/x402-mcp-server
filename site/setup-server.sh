@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # site/setup-server.sh — one-time server setup for 10.0.0.2
-# Run from local dev machine. Requires key-based SSH to jameswisdom@10.0.0.2.
+# Run from local dev machine. Requires key-based SSH to james@10.0.0.2.
 # Some steps use `ssh -t` to allocate a TTY for interactive sudo password prompts.
 set -euo pipefail
 
-SERVER="jameswisdom@10.0.0.2"
+SERVER="james@10.0.0.2"
 BREW="/usr/local/bin/brew"
 
 echo "==> [1/7] Checking Homebrew on server..."
@@ -27,20 +27,25 @@ fi
 
 echo ""
 echo "==> [2/7] Installing nginx..."
-echo "    NOTE: Homebrew has no pre-built bottle for nginx on macOS Monterey (x86_64)."
-echo "    nginx will BUILD FROM SOURCE. Allow 10-20 minutes. Do not interrupt."
-echo ""
-ssh "$SERVER" "$BREW install nginx"
-echo "    nginx installed."
+if ssh "$SERVER" "$BREW list --formula nginx" >/dev/null 2>&1; then
+    echo "    nginx already installed — skipping."
+else
+    echo "    NOTE: Homebrew has no pre-built bottle for nginx on old macOS (x86_64)."
+    echo "    nginx will BUILD FROM SOURCE. Allow 10-20 minutes. Do not interrupt."
+    echo ""
+    # Postinstall step may warn on unsupported OS but install itself succeeds; don't let warning kill the script
+    ssh "$SERVER" "$BREW install nginx" || ssh "$SERVER" "$BREW list --formula nginx" >/dev/null 2>&1
+    echo "    nginx installed."
+fi
 
 echo ""
 echo "==> [3/7] Creating web root /var/www/x402-network/..."
 echo "    This uses sudo — you will be prompted for your server password."
-ssh -t "$SERVER" "sudo mkdir -p /private/var/www/x402-network && sudo chown jameswisdom:staff /private/var/www/x402-network"
+ssh -t "$SERVER" "sudo mkdir -p /private/var/www/x402-network && sudo chown james:staff /private/var/www/x402-network"
 
 # Verify web root exists
 if ssh "$SERVER" "test -d /var/www/x402-network && echo OK" | grep -q OK; then
-    echo "    Web root /var/www/x402-network/ created and owned by jameswisdom."
+    echo "    Web root /var/www/x402-network/ created and owned by james."
 else
     echo "ERROR: Web root /var/www/x402-network/ was not created."
     exit 1
@@ -132,10 +137,20 @@ echo "    LaunchDaemon plist installed at /Library/LaunchDaemons/homebrew.mxcl.n
 echo "    (Port 8888 — AdGuard Home occupies port 80)"
 
 echo ""
+echo "==> [5.5/7] Creating nginx runtime directories..."
+echo "    (Homebrew's postinstall step doesn't complete on unsupported macOS; do it manually.)"
+ssh -t "$SERVER" "sudo mkdir -p /usr/local/var/run/nginx/client_body_temp /usr/local/var/run/nginx/proxy_temp /usr/local/var/run/nginx/fastcgi_temp /usr/local/var/run/nginx/uwsgi_temp /usr/local/var/run/nginx/scgi_temp /usr/local/var/log/nginx && sudo chown -R james:staff /usr/local/var/run/nginx /usr/local/var/log/nginx"
+echo "    nginx runtime dirs created."
+
+echo ""
 echo "==> [6/7] Validating nginx config and starting nginx..."
 echo "    This uses sudo — you may be prompted for your server password."
 ssh -t "$SERVER" "sudo /usr/local/opt/nginx/bin/nginx -t"
-ssh -t "$SERVER" "sudo launchctl load -w /Library/LaunchDaemons/homebrew.mxcl.nginx.plist"
+if ssh "$SERVER" "sudo launchctl list 2>/dev/null | grep -q homebrew.mxcl.nginx"; then
+    echo "    nginx already loaded — skipping launchctl load."
+else
+    ssh -t "$SERVER" "sudo launchctl load -w /Library/LaunchDaemons/homebrew.mxcl.nginx.plist"
+fi
 echo "    nginx config valid. nginx started via launchctl."
 
 echo ""

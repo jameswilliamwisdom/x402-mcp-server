@@ -5,7 +5,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVER="jameswisdom@10.0.0.2"
+SERVER="james@10.0.0.2"
 REMOTE_DIR="/var/www/x402-network/"
 BASE_URL="https://usebismuth.com"
 

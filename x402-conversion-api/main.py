@@ -395,17 +395,23 @@ class SSRFMiddleware(BaseHTTPMiddleware):
         if request.method == "POST" and request.url.path == "/convert":
             try:
                 body_bytes = await request.body()
+                # Empty body → let x402 middleware fire 402; malformed JSON → let Pydantic handle
+                if not body_bytes:
+                    return await call_next(request)
                 body = json.loads(body_bytes)
                 url = body.get("url", "")
                 if url:
                     validate_url_for_ssrf(str(url))
             except ValueError as e:
-                return JSONResponse(
-                    status_code=400,
-                    content={"detail": f"SSRF validation failed: {e}"},
-                )
-            except (json.JSONDecodeError, Exception):
-                # Let Pydantic handle malformed bodies
+                # Only reject on genuine SSRF validation failures, not JSON parse errors
+                if isinstance(e, json.JSONDecodeError):
+                    pass  # Malformed body → let Pydantic reject downstream
+                else:
+                    return JSONResponse(
+                        status_code=400,
+                        content={"detail": f"SSRF validation failed: {e}"},
+                    )
+            except Exception:
                 pass
         return await call_next(request)
 
