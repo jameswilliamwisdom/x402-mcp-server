@@ -218,7 +218,9 @@ if not PAY_TO:
     raise RuntimeError("PAY_TO_ADDRESS env var required (Base network wallet)")
 
 BASE_NETWORK: Network = "eip155:8453"
-FACILITATOR_URL = os.getenv("FACILITATOR_URL", "https://x402.org/facilitator")
+# Daydreams supports x402 v2 exact on Base mainnet (eip155:8453), no auth.
+# x402.org is testnet-only; CDP requires auth. Override with FACILITATOR_URL.
+FACILITATOR_URL = os.getenv("FACILITATOR_URL", "https://facilitator.daydreams.systems")
 
 _facilitator = HTTPFacilitatorClient(FacilitatorConfig(url=FACILITATOR_URL))
 _x402_server = x402ResourceServer(_facilitator)
@@ -757,7 +759,7 @@ async def favicon():
     raise HTTPException(status_code=404)
 
 
-@app.get("/.well-known/x402")
+@app.api_route("/.well-known/x402", methods=["GET", "HEAD"])
 async def well_known_x402():
     """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
     return {
@@ -797,7 +799,7 @@ async def well_known_x402():
     }
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def info():
     """Service info and pricing."""
     return {
@@ -815,7 +817,7 @@ async def info():
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     """Health check — always returns HTTP 200. Body includes browser status."""
     return {
@@ -824,7 +826,7 @@ async def health():
     }
 
 
-@app.get("/scrape/test")
+@app.api_route("/scrape/test", methods=["GET", "HEAD"])
 @limiter.limit("100/hour")
 async def scrape_test(request: Request):
     """Free test endpoint — returns fixture data (no live scraping, no payment required).
@@ -949,7 +951,7 @@ async def scrape(request: Request, body: ScrapeRequest):
 # Crawl Routes
 # =============================================================================
 
-@app.get("/crawl/test")
+@app.api_route("/crawl/test", methods=["GET", "HEAD"])
 @limiter.limit("100/hour")
 async def crawl_test(request: Request):
     """Free test endpoint — returns fixture data (no live crawl, no payment required)."""
