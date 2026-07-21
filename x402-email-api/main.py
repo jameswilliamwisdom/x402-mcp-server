@@ -351,6 +351,39 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 # Route Handlers
 # =============================================================================
 
+@app.get("/.well-known/x402")
+async def well_known_x402():
+    """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
+    return {
+        "version": 1,
+        "x402Version": 2,
+        "name": "Bismuth Email",
+        "description": "Transactional email via Resend with CC/BCC and base64 file attachments. Part of the Bismuth utility API suite for AI agents.",
+        "apiVersion": "1.0.0",
+        "network": "base",
+        "resource": {
+            "url": "https://x402-email-api-production.up.railway.app",
+            "description": "Bismuth Email — x402 USDC micropayments on Base",
+            "mimeType": "application/json",
+        },
+        "services": [
+            {
+                "name": "Send Email",
+                "endpoint": "/send",
+                "method": "POST",
+                "price": "$0.01",
+                "description": "Send transactional email (plain text or HTML) with optional CC, BCC, and attachments",
+            },
+        ],
+        "resources": ["POST /send"],
+        "documentation": "https://x402-email-api-production.up.railway.app/docs",
+        "provider": {
+            "name": "Bismuth",
+            "url": "https://usebismuth.com",
+        },
+    }
+
+
 @app.get("/")
 async def root():
     return {

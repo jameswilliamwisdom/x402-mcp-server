@@ -4,10 +4,18 @@ description: Set up a crypto wallet to use paid Bismuth APIs — MetaMask, Base 
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
+import BrandCard from '../../components/wallet/BrandCard.astro';
+import MetaMaskFox from '../../components/wallet/MetaMaskFox.astro';
+import TypingConfig from '../../components/wallet/TypingConfig.astro';
+import StepProgress from '../../components/wallet/StepProgress.astro';
 
 To use paid Bismuth APIs, you need a small amount of USDC (a US dollar stablecoin) on the Base network. This guide walks you through the complete setup — from installing a wallet to exporting your private key for use with the MCP server.
 
 You don't need to be a crypto expert. Follow these steps and you'll be ready to make your first paid API call.
+
+<MetaMaskFox />
+
+<StepProgress />
 
 <Steps>
 
@@ -15,12 +23,18 @@ You don't need to be a crypto expert. Follow these steps and you'll be ready to 
 
    MetaMask is a browser extension wallet that runs in Chrome, Firefox, Brave, or Edge.
 
-   1. Go to [metamask.io](https://metamask.io) and click "Download"
-   2. Install the extension for your browser
-   3. Open MetaMask and click "Create a new wallet"
-   4. Follow the setup prompts to create a password and generate your recovery phrase
+   <BrandCard
+     logo="/brands/metamask-fox.svg"
+     name="MetaMask"
+     accentColor="#E2761B"
+     action="Install the browser extension wallet"
+     href="https://metamask.io"
+     linkText="metamask.io"
+   />
 
-   ![MetaMask installation](../../assets/wallet/placeholder-metamask-install.png)
+   1. Click "Download" and install for your browser
+   2. Open MetaMask and click "Create a new wallet"
+   3. Create a password and write down your recovery phrase
 
    <Aside type="danger" title="Protect your recovery phrase">
    Never share your recovery phrase or private key with anyone. Anyone who has access to either can take your funds. Write your recovery phrase on paper and store it somewhere safe — not in a notes app or email.
@@ -30,14 +44,16 @@ You don't need to be a crypto expert. Follow these steps and you'll be ready to 
 
    Base is a fast, low-cost Layer 2 network built on Ethereum. Most x402 API payments are fractions of a cent, and Base keeps those fees negligible.
 
-   **Method 1 — Easiest (chainlist.org):**
-   1. Go to [chainlist.org](https://chainlist.org)
-   2. Search for "Base"
-   3. Click "Add to MetaMask" and confirm in the MetaMask popup
+   <BrandCard
+     logo="/brands/base-logo.svg"
+     name="Base"
+     accentColor="#0052FF"
+     action="Add the network via chainlist.org (one click)"
+     href="https://chainlist.org/?search=base"
+     linkText="chainlist.org"
+   />
 
-   **Method 2 — Manual (MetaMask Settings):**
-
-   Open MetaMask → Settings → Networks → Add Network, and enter:
+   Search for "Base" and click "Add to MetaMask." Or add it manually in MetaMask → Settings → Networks:
 
    | Field | Value |
    |-------|-------|
@@ -47,36 +63,36 @@ You don't need to be a crypto expert. Follow these steps and you'll be ready to 
    | Currency Symbol | `ETH` |
    | Block Explorer | `https://basescan.org` |
 
-   ![Adding Base network to MetaMask](../../assets/wallet/placeholder-add-base.png)
-
    <Aside type="note">
    Base is a Layer 2 on Ethereum — transactions are fast and cheap. You'll use ETH to pay gas fees (a few cents at most), and USDC to pay for API calls.
    </Aside>
 
 3. **Get USDC on Base**
 
-   USDC is a stablecoin pegged 1:1 to the US dollar. $1 USDC = $1 USD, always. There's no price volatility — what you fund is what you spend.
+   USDC is a stablecoin pegged 1:1 to the US dollar. $1 USDC = $1 USD, always. No price volatility — what you fund is what you spend.
 
-   **If you already have crypto:**
+   <BrandCard
+     logo="/brands/usdc-logo.svg"
+     name="USDC"
+     accentColor="#2775CA"
+     action="Get stablecoins on the Base network"
+     href="https://coinbase.com"
+     linkText="Buy on Coinbase"
+   />
 
-   Bridge USDC from Ethereum mainnet to Base using [bridge.base.org](https://bridge.base.org). Connect MetaMask, select USDC, choose the amount, and bridge.
+   **Already have crypto?** Bridge USDC from Ethereum to Base using [bridge.base.org](https://bridge.base.org).
 
-   **If you're starting from scratch:**
-
+   **Starting from scratch?**
    1. Create an account on [Coinbase](https://coinbase.com)
-   2. Buy USDC directly (it's available under "Pay with card" or bank transfer)
-   3. Withdraw to your MetaMask address on the Base network
+   2. Buy USDC (card or bank transfer)
+   3. Withdraw to your MetaMask address on Base
 
-   **How much do I need?**
+   **How much?** Not much:
+   - Screenshot or sentiment: **$0.01** per call
+   - Market overview: **$0.05** per call
+   - Intelligence report: **$0.10** per call
 
-   Not much. The pricing is:
-   - Screenshot or sentiment: $0.01 USDC per call
-   - Market overview: $0.05 USDC per call
-   - Intelligence report: $0.10 USDC per call
-
-   $1 covers 100 screenshot calls. $5 covers months of typical usage. Start small.
-
-   ![USDC balance on Base in MetaMask](../../assets/wallet/placeholder-get-usdc.png)
+   $1 covers 100 screenshot calls. **$5 covers months of typical usage.** Start small.
 
 4. **Export Your Private Key**
 
@@ -89,13 +105,15 @@ You don't need to be a crypto expert. Follow these steps and you'll be ready to 
    4. Enter your MetaMask password to confirm
    5. Copy the private key — it starts with `0x` and is 66 characters long
 
-   ![Exporting private key from MetaMask](../../assets/wallet/placeholder-export-key.png)
+   Then add it to your config:
+
+   <TypingConfig />
 
    <Aside type="danger" title="Keep your private key secure">
    Your private key controls your wallet funds. Never paste it in chat, email, GitHub, or any website. Only use it as an environment variable in your local MCP config. If you ever suspect exposure, create a new wallet immediately and move your funds.
    </Aside>
 
-   Once you have the key, add it to your MCP client config. See [Getting Started — Paid Mode](/getting-started/#paid-mode) for the exact config format for all 4 clients.
+   Once you have the key, see [Getting Started — Paid Mode](/getting-started/#paid-mode) for the exact config format for all 4 clients.
 
 </Steps>
 

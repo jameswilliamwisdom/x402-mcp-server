@@ -665,6 +665,46 @@ def load_crawl_fixture() -> dict:
         return json.load(f)
 
 
+@app.get("/.well-known/x402")
+async def well_known_x402():
+    """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
+    return {
+        "version": 1,
+        "x402Version": 2,
+        "name": "Bismuth Scraping",
+        "description": "Playwright-powered web scraping with structured markdown, links, tables, and BFS site crawl. SSRF-protected. Part of the Bismuth utility API suite for AI agents.",
+        "apiVersion": "1.0.0",
+        "network": "base",
+        "resource": {
+            "url": "https://x402-scraping-api-production.up.railway.app",
+            "description": "Bismuth Scraping — x402 USDC micropayments on Base",
+            "mimeType": "application/json",
+        },
+        "services": [
+            {
+                "name": "Scrape URL",
+                "endpoint": "/scrape",
+                "method": "POST",
+                "price": "$0.02",
+                "description": "Fetch a URL, execute JS, return structured markdown + links + tables + metadata",
+            },
+            {
+                "name": "Crawl Site",
+                "endpoint": "/crawl",
+                "method": "POST",
+                "price": "$0.10",
+                "description": "BFS crawl up to 15 pages from a seed URL",
+            },
+        ],
+        "resources": ["POST /scrape", "POST /crawl"],
+        "documentation": "https://x402-scraping-api-production.up.railway.app/docs",
+        "provider": {
+            "name": "Bismuth",
+            "url": "https://usebismuth.com",
+        },
+    }
+
+
 @app.get("/")
 async def info():
     """Service info and pricing."""

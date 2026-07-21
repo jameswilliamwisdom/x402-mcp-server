@@ -452,6 +452,39 @@ def load_fixture() -> dict:
         return json.load(f)
 
 
+@app.get("/.well-known/x402")
+async def well_known_x402():
+    """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
+    return {
+        "version": 1,
+        "x402Version": 2,
+        "name": "Bismuth Conversion",
+        "description": "File conversion: image resize/reformat, CSV→JSON, HTML→PDF, DOCX→PDF. Part of the Bismuth utility API suite for AI agents.",
+        "apiVersion": "1.0.0",
+        "network": "base",
+        "resource": {
+            "url": "https://x402-conversion-api-production.up.railway.app",
+            "description": "Bismuth Conversion — x402 USDC micropayments on Base",
+            "mimeType": "application/json",
+        },
+        "services": [
+            {
+                "name": "Convert File",
+                "endpoint": "/convert",
+                "method": "POST",
+                "price": "$0.02",
+                "description": "Convert files: image resize/reformat, CSV→JSON, HTML→PDF, DOCX→PDF",
+            },
+        ],
+        "resources": ["POST /convert"],
+        "documentation": "https://x402-conversion-api-production.up.railway.app/docs",
+        "provider": {
+            "name": "Bismuth",
+            "url": "https://usebismuth.com",
+        },
+    }
+
+
 @app.get("/")
 async def info():
     """Service info and pricing."""

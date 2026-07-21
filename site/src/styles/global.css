@@ -1,14 +1,29 @@
-/* Brand CSS tokens — source of truth. See assets/brand-guidelines.md */
-/* SYNC: token values must match assets/brand-guidelines.md */
+/* Brand CSS tokens — Bismuth identity */
 :root {
+  /* Legacy x402 green — kept for code accents and protocol references */
   --x402-green: #4ADE80;
   --x402-green-muted: #22C55E;
   --x402-green-dim: #166534;
   --x402-green-glow: rgba(74, 222, 128, 0.15);
+
+  /* Bismuth palette — derived from bismuth oxide thin-film interference */
+  --bi-purple: #9B6DFF;
+  --bi-purple-deep: #6C3AE0;
+  --bi-pink: #E84D8A;
+  --bi-gold: #D4A843;
+  --bi-teal: #3DD6C8;
+  --bi-blue: #4A7DFF;
+
+  /* Iridescent gradient */
+  --bi-gradient: linear-gradient(135deg, var(--bi-teal), var(--bi-blue), var(--bi-purple), var(--bi-pink), var(--bi-gold));
+  --bi-gradient-subtle: linear-gradient(135deg, rgba(61,214,200,0.15), rgba(155,109,255,0.15), rgba(232,77,138,0.15));
+  --bi-glow: radial-gradient(ellipse at center, rgba(155,109,255,0.2) 0%, rgba(232,77,138,0.1) 40%, transparent 70%);
+
+  /* Surfaces */
   --x402-bg: #000000;
-  --x402-surface: #111111;
-  --x402-elevated: #1A1A1A;
-  --x402-border: #2A2A2A;
+  --x402-surface: #0A0A0F;
+  --x402-elevated: #12121A;
+  --x402-border: #1E1E2A;
   --x402-text: #FFFFFF;
   --x402-text-muted: #A1A1AA;
   --x402-text-dim: #52525B;

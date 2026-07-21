@@ -208,6 +208,39 @@ class SearchRequest(BaseModel):
 # Route Handlers
 # =============================================================================
 
+@app.get("/.well-known/x402")
+async def well_known_x402():
+    """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
+    return {
+        "version": 1,
+        "x402Version": 2,
+        "name": "Bismuth Search",
+        "description": "Web search via Tavily with ranked results, snippets, and optional AI-synthesized answer. Part of the Bismuth utility API suite for AI agents.",
+        "apiVersion": "1.0.0",
+        "network": "base",
+        "resource": {
+            "url": "https://x402-search-api-production.up.railway.app",
+            "description": "Bismuth Search — x402 USDC micropayments on Base",
+            "mimeType": "application/json",
+        },
+        "services": [
+            {
+                "name": "Web Search",
+                "endpoint": "/search",
+                "method": "POST",
+                "price": "$0.01",
+                "description": "Search the web and receive ranked results with title, URL, snippet, and relevance score",
+            },
+        ],
+        "resources": ["POST /search"],
+        "documentation": "https://x402-search-api-production.up.railway.app/docs",
+        "provider": {
+            "name": "Bismuth",
+            "url": "https://usebismuth.com",
+        },
+    }
+
+
 @app.get("/")
 async def root():
     return {

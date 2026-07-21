@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.37.7",
+    "@metamask/logo": "^4.0.0",
     "astro": "^5.18.0"
   },
   "overrides": {
