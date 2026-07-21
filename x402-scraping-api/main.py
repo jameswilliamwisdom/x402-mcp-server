@@ -21,13 +21,19 @@ from urllib.parse import urlparse, urljoin, urlunsplit
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel, Field, field_validator
 from pydantic_core import Url
 from pydantic import UrlConstraints
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from fastapi_x402 import init_x402, pay
+from x402.http import FacilitatorConfig, HTTPFacilitatorClient, PaymentOption
+from x402.http.middleware.fastapi import PaymentMiddlewareASGI
+from x402.http.types import RouteConfig
+from x402.mechanisms.evm.exact import ExactEvmServerScheme
+from x402.schemas import Network
+from x402.server import x402ResourceServer
+
 from playwright.async_api import async_playwright, Browser
 
 import trafilatura
@@ -195,14 +201,42 @@ async def lifespan(app: FastAPI):
 # =============================================================================
 
 app = FastAPI(
-    title="x402 Scraping API",
-    description="Scrape any URL and return structured JSON. Powered by Playwright + x402 USDC payment.",
-    version="1.0.0",
+    title="Bismuth Scraping",
+    description="Playwright-powered web scraping with structured markdown, links, tables, and BFS site crawl. SSRF-protected. Part of the Bismuth utility API suite for AI agents.",
+    version="2.0.0",
     lifespan=lifespan,
+    contact={
+        "name": "Bismuth",
+        "url": "https://usebismuth.com",
+        "email": os.getenv("CONTACT_EMAIL", "james@usebismuth.com"),
+    },
 )
 
-# x402 payment middleware — added FIRST so it runs LAST (LIFO)
-init_x402(app, network="base")
+# x402 v2 payment middleware — official x402-foundation SDK
+PAY_TO = os.getenv("PAY_TO_ADDRESS")
+if not PAY_TO:
+    raise RuntimeError("PAY_TO_ADDRESS env var required (Base network wallet)")
+
+BASE_NETWORK: Network = "eip155:8453"
+FACILITATOR_URL = os.getenv("FACILITATOR_URL", "https://x402.org/facilitator")
+
+_facilitator = HTTPFacilitatorClient(FacilitatorConfig(url=FACILITATOR_URL))
+_x402_server = x402ResourceServer(_facilitator)
+_x402_server.register(BASE_NETWORK, ExactEvmServerScheme())
+
+_paid_routes = {
+    "POST /scrape": RouteConfig(
+        accepts=[PaymentOption(scheme="exact", pay_to=PAY_TO, price="$0.02", network=BASE_NETWORK)],
+        mime_type="application/json",
+        description="Scrape a URL and return structured JSON",
+    ),
+    "POST /crawl": RouteConfig(
+        accepts=[PaymentOption(scheme="exact", pay_to=PAY_TO, price="$0.10", network=BASE_NETWORK)],
+        mime_type="application/json",
+        description="Shallow BFS crawl up to 15 pages from a seed URL",
+    ),
+}
+app.add_middleware(PaymentMiddlewareASGI, routes=_paid_routes, server=_x402_server)
 
 # CORS middleware
 app.add_middleware(
@@ -665,6 +699,64 @@ def load_crawl_fixture() -> dict:
         return json.load(f)
 
 
+# =============================================================================
+# OpenAPI x402 v2 Extensions
+# =============================================================================
+# Injects info.x-guidance and per-operation x-payment-info + responses.402
+# on paid endpoints. Consumed by x402scan and other discovery crawlers.
+
+_original_openapi_fn = app.openapi
+
+
+def _openapi_with_x402_v2():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = _original_openapi_fn()
+
+    schema["info"]["x-guidance"] = (
+        "Bismuth Scraping — Playwright-powered web scraping and BFS site crawl for AI agents. "
+        "POST /scrape with {url, wait_for?} returns structured markdown, links, tables, images, "
+        "and metadata for a single URL ($0.02 USDC on Base). "
+        "POST /crawl with {url, ...} shallow-crawls up to 15 pages from a seed URL ($0.10 USDC). "
+        "Free fixtures at GET /scrape/test and GET /crawl/test. "
+        "SSRF-protected: private/loopback/link-local IPs rejected before payment."
+    )
+
+    _paid_ops = {
+        ("/scrape", "post"): "0.020000",
+        ("/crawl", "post"): "0.100000",
+    }
+    for (path, method), amount in _paid_ops.items():
+        op = schema.get("paths", {}).get(path, {}).get(method)
+        if op is None:
+            continue
+        op["x-payment-info"] = {
+            "price": {"mode": "fixed", "currency": "USD", "amount": amount},
+            "protocols": [{"x402": {}}],
+        }
+        op.setdefault("responses", {})["402"] = {"description": "Payment Required"}
+
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _openapi_with_x402_v2
+
+
+# =============================================================================
+# Favicon
+# =============================================================================
+
+_FAVICON_PATH = os.path.join(os.path.dirname(__file__), "favicon.ico")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    if os.path.exists(_FAVICON_PATH):
+        return FileResponse(_FAVICON_PATH, media_type="image/x-icon")
+    raise HTTPException(status_code=404)
+
+
 @app.get("/.well-known/x402")
 async def well_known_x402():
     """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
@@ -744,7 +836,6 @@ async def scrape_test(request: Request):
 
 
 @app.post("/scrape")
-@pay("$0.02")
 async def scrape(request: Request, body: ScrapeRequest):
     """Scrape a URL and return structured JSON.
 
@@ -866,7 +957,6 @@ async def crawl_test(request: Request):
 
 
 @app.post("/crawl")
-@pay("$0.10")
 async def crawl(request: Request, body: CrawlRequest):
     """Shallow BFS crawl — up to 15 pages, returns per-page extraction results.
 
