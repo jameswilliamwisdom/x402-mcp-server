@@ -27,6 +27,7 @@ RUN python -c "from weasyprint import HTML; HTML(string='<p>test</p>').write_pdf
 
 COPY main.py .
 COPY fixture.json .
+COPY favicon.ico .
 
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

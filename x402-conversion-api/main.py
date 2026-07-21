@@ -16,16 +16,22 @@ from io import StringIO, BytesIO
 from typing import Optional, Annotated, Literal, Union
 from urllib.parse import urlparse
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel, Field
 from pydantic_core import Url
 from pydantic import UrlConstraints
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.concurrency import run_in_threadpool
 
-from fastapi_x402 import init_x402, pay
+from x402.http import FacilitatorConfig, HTTPFacilitatorClient, PaymentOption
+from x402.http.middleware.fastapi import PaymentMiddlewareASGI
+from x402.http.types import RouteConfig
+from x402.mechanisms.evm.exact import ExactEvmServerScheme
+from x402.schemas import Network
+from x402.server import x402ResourceServer
+
 from PIL import Image, UnidentifiedImageError
 import weasyprint
 from weasyprint.urls import default_url_fetcher
@@ -338,15 +344,36 @@ p {{ margin: 0.4em 0; }}
 # =============================================================================
 
 app = FastAPI(
-    title="x402 Conversion API",
-    description="Convert files: image resize/reformat, CSV→JSON, HTML→PDF, DOCX→PDF. Powered by x402 USDC payment.",
-    version="1.0.0",
+    title="Bismuth Conversion",
+    description="File conversion: image resize/reformat, CSV→JSON, HTML→PDF, DOCX→PDF. Part of the Bismuth utility API suite for AI agents.",
+    version="2.0.0",
+    contact={
+        "name": "Bismuth",
+        "url": "https://usebismuth.com",
+        "email": os.getenv("CONTACT_EMAIL", "james@usebismuth.com"),
+    },
 )
 
-# x402 payment middleware — added FIRST so it runs LAST (LIFO)
-init_x402(app, network="base")
+PAY_TO = os.getenv("PAY_TO_ADDRESS")
+if not PAY_TO:
+    raise RuntimeError("PAY_TO_ADDRESS env var required (Base network wallet)")
 
-# CORS middleware
+BASE_NETWORK: Network = "eip155:8453"
+FACILITATOR_URL = os.getenv("FACILITATOR_URL", "https://facilitator.daydreams.systems")
+
+_facilitator = HTTPFacilitatorClient(FacilitatorConfig(url=FACILITATOR_URL))
+_x402_server = x402ResourceServer(_facilitator)
+_x402_server.register(BASE_NETWORK, ExactEvmServerScheme())
+
+_paid_routes = {
+    "POST /convert": RouteConfig(
+        accepts=[PaymentOption(scheme="exact", pay_to=PAY_TO, price="$0.02", network=BASE_NETWORK)],
+        mime_type="application/json",
+        description="Convert files (image reformat, CSV, HTML, DOCX)",
+    ),
+}
+app.add_middleware(PaymentMiddlewareASGI, routes=_paid_routes, server=_x402_server)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -452,7 +479,49 @@ def load_fixture() -> dict:
         return json.load(f)
 
 
-@app.get("/.well-known/x402")
+# =============================================================================
+# OpenAPI x402 v2 Extensions + Favicon
+# =============================================================================
+
+_original_openapi_fn = app.openapi
+
+
+def _openapi_with_x402_v2():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = _original_openapi_fn()
+    schema["info"]["x-guidance"] = (
+        "Bismuth Conversion — File conversion for AI agents. "
+        "POST /convert with {source_type, target_type, ...} converts image formats, "
+        "CSV→JSON, HTML→PDF, DOCX→PDF ($0.02 USDC on Base). "
+        "Free fixture at GET /convert/test."
+    )
+    for (path, method), amount in [(("/convert", "post"), "0.020000")]:
+        op = schema.get("paths", {}).get(path, {}).get(method)
+        if op is None:
+            continue
+        op["x-payment-info"] = {
+            "price": {"mode": "fixed", "currency": "USD", "amount": amount},
+            "protocols": [{"x402": {}}],
+        }
+        op.setdefault("responses", {})["402"] = {"description": "Payment Required"}
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _openapi_with_x402_v2
+
+_FAVICON_PATH = os.path.join(os.path.dirname(__file__), "favicon.ico")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    if os.path.exists(_FAVICON_PATH):
+        return FileResponse(_FAVICON_PATH, media_type="image/x-icon")
+    raise HTTPException(status_code=404)
+
+
+@app.api_route("/.well-known/x402", methods=["GET", "HEAD"])
 async def well_known_x402():
     """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
     return {
@@ -485,7 +554,7 @@ async def well_known_x402():
     }
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def info():
     """Service info and pricing."""
     return {
@@ -501,13 +570,13 @@ async def info():
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     """Health check — always returns HTTP 200."""
     return {"status": "healthy"}
 
 
-@app.get("/convert/test")
+@app.api_route("/convert/test", methods=["GET", "HEAD"])
 @limiter.limit("100/hour")
 async def convert_test(request: Request):
     """Free test endpoint — returns fixture data (no conversion, no payment required).
@@ -519,7 +588,6 @@ async def convert_test(request: Request):
 
 
 @app.post("/convert")
-@pay("$0.02")
 async def convert(request: Request, body: ConvertRequest):
     """Convert a file via URL to the target format.
 

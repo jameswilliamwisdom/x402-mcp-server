@@ -18,10 +18,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from fastapi_x402 import init_x402, pay
+from x402.http import FacilitatorConfig, HTTPFacilitatorClient, PaymentOption
+from x402.http.middleware.fastapi import PaymentMiddlewareASGI
+from x402.http.types import RouteConfig
+from x402.mechanisms.evm.exact import ExactEvmServerScheme
+from x402.schemas import Network
+from x402.server import x402ResourceServer
+
 import resend
 from resend.exceptions import ResendError
 from slowapi import Limiter
@@ -312,13 +318,37 @@ async def lifespan(app: FastAPI):
 # =============================================================================
 
 app = FastAPI(
-    title="x402 Email API",
-    description="Transactional email via Resend — plain text or HTML body. Powered by x402 USDC payment.",
-    version="1.0.0",
+    title="Bismuth Email",
+    description="Transactional email via Resend with CC/BCC and base64 file attachments. Part of the Bismuth utility API suite for AI agents.",
+    version="2.0.0",
     lifespan=lifespan,
+    contact={
+        "name": "Bismuth",
+        "url": "https://usebismuth.com",
+        "email": os.getenv("CONTACT_EMAIL", "james@usebismuth.com"),
+    },
 )
 
-init_x402(app, network="base")  # Added FIRST -> runs LAST (LIFO)
+# x402 v2 payment middleware — official x402-foundation SDK
+PAY_TO = os.getenv("PAY_TO_ADDRESS")
+if not PAY_TO:
+    raise RuntimeError("PAY_TO_ADDRESS env var required (Base network wallet)")
+
+BASE_NETWORK: Network = "eip155:8453"
+FACILITATOR_URL = os.getenv("FACILITATOR_URL", "https://facilitator.daydreams.systems")
+
+_facilitator = HTTPFacilitatorClient(FacilitatorConfig(url=FACILITATOR_URL))
+_x402_server = x402ResourceServer(_facilitator)
+_x402_server.register(BASE_NETWORK, ExactEvmServerScheme())
+
+_paid_routes = {
+    "POST /send": RouteConfig(
+        accepts=[PaymentOption(scheme="exact", pay_to=PAY_TO, price="$0.01", network=BASE_NETWORK)],
+        mime_type="application/json",
+        description="Send transactional email via Resend",
+    ),
+}
+app.add_middleware(PaymentMiddlewareASGI, routes=_paid_routes, server=_x402_server)
 
 app.add_middleware(
     CORSMiddleware,
@@ -351,7 +381,58 @@ async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
 # Route Handlers
 # =============================================================================
 
-@app.get("/.well-known/x402")
+# =============================================================================
+# OpenAPI x402 v2 Extensions
+# =============================================================================
+
+_original_openapi_fn = app.openapi
+
+
+def _openapi_with_x402_v2():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = _original_openapi_fn()
+
+    schema["info"]["x-guidance"] = (
+        "Bismuth Email — Transactional email delivery via Resend for AI agents. "
+        "POST /send with {to, subject, body, cc?, bcc?, attachments?} sends an email "
+        "($0.01 USDC on Base). Attachments are base64-encoded, 25MB cap per file. "
+        "Per-wallet daily rate limits apply. Free test at GET /send/test."
+    )
+
+    _paid_ops = {("/send", "post"): "0.010000"}
+    for (path, method), amount in _paid_ops.items():
+        op = schema.get("paths", {}).get(path, {}).get(method)
+        if op is None:
+            continue
+        op["x-payment-info"] = {
+            "price": {"mode": "fixed", "currency": "USD", "amount": amount},
+            "protocols": [{"x402": {}}],
+        }
+        op.setdefault("responses", {})["402"] = {"description": "Payment Required"}
+
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _openapi_with_x402_v2
+
+
+# =============================================================================
+# Favicon
+# =============================================================================
+
+_FAVICON_PATH = os.path.join(os.path.dirname(__file__), "favicon.ico")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    if os.path.exists(_FAVICON_PATH):
+        return FileResponse(_FAVICON_PATH, media_type="image/x-icon")
+    raise HTTPException(status_code=404)
+
+
+@app.api_route("/.well-known/x402", methods=["GET", "HEAD"])
 async def well_known_x402():
     """x402 discovery — indexed by x402scan and other ecosystem crawlers."""
     return {
@@ -384,7 +465,7 @@ async def well_known_x402():
     }
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root():
     return {
         "service": "x402-email-api",
@@ -399,7 +480,7 @@ async def root():
     }
 
 
-@app.get("/health")
+@app.api_route("/health", methods=["GET", "HEAD"])
 async def health():
     return {
         "status": "healthy",
@@ -407,14 +488,13 @@ async def health():
     }
 
 
-@app.get("/send/test")
+@app.api_route("/send/test", methods=["GET", "HEAD"])
 @limiter.limit("100/hour")
 async def send_test(request: Request):
     return {"message_id": "test_00000000-0000-0000-0000-000000000000"}
 
 
 @app.post("/send")
-@pay("$0.01")
 def send_email(request: Request, body: EmailRequest):
     """Send email via Resend. Plain def (not async def) — Resend SDK is synchronous.
     FastAPI auto-routes sync handlers to thread pool, preventing event-loop blocking.
