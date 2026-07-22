@@ -56,10 +56,77 @@ MAX_RESPONSE_BYTES = 5_000_000
 ALLOWED_SCHEMES = {"http", "https"}
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font", "websocket"}
 
+# Per-buyer daily caps — protect Bismuth from SSRF-proxy abuse where a paying
+# buyer uses our infrastructure to scrape targets from our IPs at high volume.
+# Paid scrape calls still cost money, but this caps our upstream cost + our
+# nuisance to third-party targets.
+DAILY_SCRAPE_CAP_PER_WALLET = 500
+DAILY_CRAWL_CAP_PER_WALLET = 50
+
+# User-Agent for outbound requests — lets scraped hosts identify + block us
+# via robots.txt / WAF if they don't want to be scraped. Contact for abuse
+# reports is at the email in openapi info.contact.email.
+BISMUTH_USER_AGENT = "BismuthScraper/2.0 (+https://usebismuth.com; abuse@usebismuth.com)"
+
 FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "fixture.json")
 CRAWL_FIXTURE_PATH = os.path.join(os.path.dirname(__file__), "crawl_fixture.json")
 CRAWL_PAGE_BUDGET_S = 6.0
 CRAWL_TOTAL_BUDGET_S = 90.0
+
+
+# =============================================================================
+# Per-Buyer Wallet Rate Limiter — protects against SSRF-proxy abuse
+# =============================================================================
+
+import threading
+from datetime import date as _date
+
+_wallet_scrape_counts: dict = {}   # {wallet_lower: (count, date)}
+_wallet_crawl_counts: dict = {}    # {wallet_lower: (count, date)}
+_wallet_lock = threading.Lock()
+
+
+def get_buyer_wallet(request):
+    """Extract buyer wallet from x402 v2 middleware state.
+
+    Middleware writes request.state.payment_payload (PaymentPayload) after
+    verifying payment. For exact-evm scheme, the payload dict contains the
+    EIP-3009 authorization with the buyer address at authorization.from.
+
+    Returns lowercased address or None if unavailable (fail open — do not
+    block requests when middleware state is missing).
+    """
+    payment_payload = getattr(request.state, "payment_payload", None)
+    if payment_payload is None:
+        return None
+    try:
+        payload = payment_payload.payload if hasattr(payment_payload, "payload") else payment_payload["payload"]
+        return payload["authorization"]["from"].lower()
+    except (KeyError, TypeError, AttributeError):
+        return None
+
+
+def check_wallet_daily_cap(wallet, counter: dict, cap: int, action: str) -> None:
+    """Check and increment a daily per-wallet counter. Raises 429 if over cap."""
+    if wallet is None:
+        return  # Fail open — pre-payment probes never carry wallet state
+    today = _date.today()
+    with _wallet_lock:
+        count, recorded_day = counter.get(wallet, (0, today))
+        if recorded_day != today:
+            count = 0
+        if count >= cap:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "wallet_daily_cap_exceeded",
+                    "action": action,
+                    "limit": cap,
+                    "resets": "midnight UTC",
+                    "why": "Per-buyer daily caps protect Bismuth infrastructure from abuse. Contact abuse@usebismuth.com for enterprise limits.",
+                },
+            )
+        counter[wallet] = (count + 1, today)
 
 
 # =============================================================================
@@ -646,6 +713,15 @@ async def scrape_page(url: str, wait_for: Optional[str]) -> dict:
         ),
         permissions=[],
         service_workers="block",
+        # Standard RFC 9110 proxy identification — lets targets attribute traffic
+        # to Bismuth even though we render with a Chrome UA for JS compatibility.
+        # `From` and `Via` are the correct headers for identifying a scraping
+        # intermediary; UA stays as Chrome so we don't degrade rendering on
+        # sites that gate content on UA (very common).
+        extra_http_headers={
+            "From": "abuse@usebismuth.com",
+            "Via": "1.1 bismuth-scraper (+https://usebismuth.com)",
+        },
     )
 
     # Register route blocking BEFORE creating page (must be active before goto)
@@ -863,7 +939,9 @@ async def scrape(request: Request, body: ScrapeRequest):
 
     Pricing: $0.02 USDC per scrape (Base network).
     SSRF protection: private/loopback IPs rejected before payment.
+    Per-buyer daily cap: 500 scrapes/wallet — prevents SSRF-proxy abuse.
     """
+    check_wallet_daily_cap(get_buyer_wallet(request), _wallet_scrape_counts, DAILY_SCRAPE_CAP_PER_WALLET, "scrape")
     global browser
 
     if browser is None or not browser.is_connected():
@@ -979,7 +1057,9 @@ async def crawl(request: Request, body: CrawlRequest):
 
     Same extraction pipeline as POST /scrape. SSRF-validated on every discovered URL.
     Pricing: $0.10 USDC per crawl (Base network).
+    Per-buyer daily cap: 50 crawls/wallet — a crawl fetches up to 15 pages.
     """
+    check_wallet_daily_cap(get_buyer_wallet(request), _wallet_crawl_counts, DAILY_CRAWL_CAP_PER_WALLET, "crawl")
     global browser
 
     if browser is None or not browser.is_connected():

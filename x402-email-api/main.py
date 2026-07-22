@@ -61,21 +61,24 @@ _wallet_lock = threading.Lock()    # ONE lock for both dicts — prevents deadlo
 
 
 def get_wallet_address(request: Request):
-    """Extract payer wallet from fastapi-x402 decoded_payment state.
+    """Extract payer wallet from x402 v2 middleware state.
 
-    Structure (from fastapi-x402 0.1.8 source inspection):
-    request.state.decoded_payment = {
-        "payload": {
-            "authorization": {"from": "0xPayerWallet", ...},
-            "signature": "0x..."
-        }
-    }
+    x402[fastapi,evm] middleware (v2.16+) stores the verified payment on:
+        request.state.payment_payload  # PaymentPayload model
+    Whose .payload dict (for the exact-evm scheme) is the serialized
+    ExactEIP3009Payload:
+        {"authorization": {"from": "0x...", ...}, "signature": "0x..."}
+
+    Returns lowercased buyer address or None if unavailable (which disables
+    per-wallet limits — fail open for pre-payment probes).
     """
-    decoded = getattr(request.state, "decoded_payment", None)
-    if decoded is None:
+    payment_payload = getattr(request.state, "payment_payload", None)
+    if payment_payload is None:
         return None
     try:
-        return decoded["payload"]["authorization"]["from"].lower()
+        # payment_payload is a Pydantic model; .payload is dict[str, Any]
+        payload = payment_payload.payload if hasattr(payment_payload, "payload") else payment_payload["payload"]
+        return payload["authorization"]["from"].lower()
     except (KeyError, TypeError, AttributeError):
         return None
 
