@@ -743,6 +743,16 @@ def _openapi_with_x402_v2():
         }
         op.setdefault("responses", {})["402"] = {"description": "Payment Required"}
 
+    # Mark all non-paid ops with security:[] so x402scan indexes them as free resources
+    for path, path_item in schema.get("paths", {}).items():
+        for method in ("get", "post", "put", "delete", "patch", "options", "head"):
+            op = path_item.get(method)
+            if op is None:
+                continue
+            if (path, method) in _paid_ops:
+                continue
+            op["security"] = []
+
     app.openapi_schema = schema
     return schema
 

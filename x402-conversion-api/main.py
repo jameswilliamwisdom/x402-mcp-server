@@ -502,7 +502,8 @@ def _openapi_with_x402_v2():
         "CSV→JSON, HTML→PDF, DOCX→PDF ($0.02 USDC on Base). "
         "Free fixture at GET /convert/test."
     )
-    for (path, method), amount in [(("/convert", "post"), "0.020000")]:
+    _paid_ops = {("/convert", "post"): "0.020000"}
+    for (path, method), amount in _paid_ops.items():
         op = schema.get("paths", {}).get(path, {}).get(method)
         if op is None:
             continue
@@ -511,6 +512,17 @@ def _openapi_with_x402_v2():
             "protocols": [{"x402": {}}],
         }
         op.setdefault("responses", {})["402"] = {"description": "Payment Required"}
+
+    # Mark all non-paid ops with security:[] so x402scan indexes them as free resources
+    for path, path_item in schema.get("paths", {}).items():
+        for method in ("get", "post", "put", "delete", "patch", "options", "head"):
+            op = path_item.get(method)
+            if op is None:
+                continue
+            if (path, method) in _paid_ops:
+                continue
+            op["security"] = []
+
     app.openapi_schema = schema
     return schema
 
