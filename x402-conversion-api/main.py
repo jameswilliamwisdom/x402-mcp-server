@@ -34,7 +34,7 @@ from x402.server import x402ResourceServer
 
 from PIL import Image, UnidentifiedImageError
 import weasyprint
-from weasyprint.urls import default_url_fetcher
+from weasyprint.urls import URLFetcherResponse, default_url_fetcher
 import httpx
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -120,65 +120,157 @@ def validate_url_for_ssrf(url: str) -> None:
 
 
 # =============================================================================
-# Async File Download with Streaming Size Enforcement
+# Guarded Fetching
 # =============================================================================
+#
+# Security review 2026-11-18. Three things were wrong with the old download:
+#   - The SSRF check ran on the raw request string (urllib's parser) while
+#     the fetch used the pydantic-normalised URL. For
+#     "http://169.254.169.254\\@example.com/" the check saw example.com
+#     and the fetch went to 169.254.169.254.
+#   - Redirect hops were checked from the raw Location header, so relative
+#     redirects were rejected and nothing tied the check to what was fetched.
+#   - Nothing looked at where the connection actually went, so DNS that
+#     changed between the check and the fetch was invisible.
+# Every fetch now goes through _check_fetch_url() on the exact string that
+# is requested, follows redirects by hand so each hop gets the same check,
+# and refuses to read a response whose peer address is not public.
+
+MAX_REDIRECTS = 5
+_REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+_DISALLOWED_URL_CHARS = frozenset("\\ ")
+_FETCH_TIMEOUT = httpx.Timeout(connect=5.0, read=30.0, write=5.0, pool=5.0)
+
+
+def _check_fetch_url(url: str) -> None:
+    """Raise ValueError unless `url` is safe to request exactly as written."""
+    if any(c in _DISALLOWED_URL_CHARS or ord(c) < 0x20 or ord(c) == 0x7F for c in url):
+        raise ValueError("URL contains characters that are not allowed")
+    validate_url_for_ssrf(url)
+
+
+def _peer_is_public(peer) -> bool:
+    """`peer` is the (host, port, ...) the socket is connected to, or None."""
+    if not peer:
+        return True
+    try:
+        _assert_ip_public(ipaddress.ip_address(str(peer[0]).split("%")[0]))
+    except ValueError:
+        return False
+    return True
+
+
+def _assert_response_peer_public(response: httpx.Response) -> None:
+    stream = response.extensions.get("network_stream")
+    peer = stream.get_extra_info("server_addr") if stream is not None else None
+    if not _peer_is_public(peer):
+        raise ValueError("URL resolves to blocked IP range")
+
+
+def _next_hop(response: httpx.Response) -> Optional[str]:
+    """The absolute URL a redirect response points to, or None."""
+    location = response.headers.get("location")
+    if response.status_code in _REDIRECT_STATUSES and location:
+        return str(response.url.join(location))
+    return None
+
+
+def _too_large(received: int) -> ValueError:
+    return ValueError(
+        f"Source file exceeds 10MB limit (stopped after "
+        f"{received / 1024 / 1024:.1f}MB downloaded)."
+    )
+
+
+def _check_content_length(response: httpx.Response) -> None:
+    content_length = response.headers.get("content-length")
+    if content_length and content_length.isdigit() and int(content_length) > MAX_FILE_BYTES:
+        raise ValueError(
+            f"Source file is {int(content_length) / 1024 / 1024:.1f}MB"
+            f" — exceeds 10MB limit."
+        )
+
 
 async def download_file(url: str) -> bytes:
-    """Download a file from url with streaming 10MB size enforcement and redirect SSRF re-validation.
-
-    Two-layer size check: Content-Length header fast path + mandatory streaming accumulator
-    (handles servers that omit Content-Length).
-    """
-    def on_redirect(response):
-        location = response.headers.get("location", "")
-        if location:
-            validate_url_for_ssrf(location)  # Re-validate each redirect hop
-
+    """Download `url` with a streaming 10MB cap. Every hop is SSRF-checked
+    and the response is only read from a public peer address."""
+    current = url
     async with httpx.AsyncClient(
-        follow_redirects=True,
-        max_redirects=5,
-        timeout=httpx.Timeout(connect=5.0, read=30.0, write=5.0, pool=5.0),
-        event_hooks={"response": [on_redirect]},
+        follow_redirects=False, timeout=_FETCH_TIMEOUT, trust_env=False,
     ) as client:
-        async with client.stream("GET", url) as response:
-            response.raise_for_status()
+        for _ in range(MAX_REDIRECTS + 1):
+            _check_fetch_url(current)
+            async with client.stream("GET", current) as response:
+                _assert_response_peer_public(response)
+                hop = _next_hop(response)
+                if hop is not None:
+                    current = hop
+                    continue
+                response.raise_for_status()
+                _check_content_length(response)
+                # Mandatory streaming accumulator: handles missing/spoofed Content-Length
+                chunks = []
+                received = 0
+                async for chunk in response.aiter_bytes(chunk_size=65536):
+                    received += len(chunk)
+                    if received > MAX_FILE_BYTES:
+                        raise _too_large(received)
+                    chunks.append(chunk)
+                return b"".join(chunks)
+    raise ValueError("Too many redirects")
 
-            # Fast path: reject if Content-Length header exceeds limit
-            content_length = response.headers.get("content-length")
-            if content_length and int(content_length) > MAX_FILE_BYTES:
-                raise ValueError(
-                    f"Source file is {int(content_length) / 1024 / 1024:.1f}MB"
-                    f" — exceeds 10MB limit."
-                )
 
-            # Mandatory streaming accumulator: handles missing/spoofed Content-Length
-            chunks = []
-            received = 0
-            async for chunk in response.aiter_bytes(chunk_size=65536):
-                received += len(chunk)
-                if received > MAX_FILE_BYTES:
-                    raise ValueError(
-                        f"Source file exceeds 10MB limit (stopped after "
-                        f"{received / 1024 / 1024:.1f}MB downloaded)."
-                    )
-                chunks.append(chunk)
-
-    return b"".join(chunks)
+def guarded_get_sync(url: str) -> tuple[bytes, Optional[str], str]:
+    """Synchronous twin of download_file for WeasyPrint's fetcher.
+    Returns (body, content_type, final_url)."""
+    current = url
+    with httpx.Client(
+        follow_redirects=False, timeout=_FETCH_TIMEOUT, trust_env=False,
+    ) as client:
+        for _ in range(MAX_REDIRECTS + 1):
+            _check_fetch_url(current)
+            with client.stream("GET", current) as response:
+                _assert_response_peer_public(response)
+                hop = _next_hop(response)
+                if hop is not None:
+                    current = hop
+                    continue
+                response.raise_for_status()
+                _check_content_length(response)
+                chunks = []
+                received = 0
+                for chunk in response.iter_bytes(chunk_size=65536):
+                    received += len(chunk)
+                    if received > MAX_FILE_BYTES:
+                        raise _too_large(received)
+                    chunks.append(chunk)
+                return b"".join(chunks), response.headers.get("content-type"), current
+    raise ValueError("Too many redirects")
 
 
 # =============================================================================
 # WeasyPrint Safe URL Fetcher (SSRF Protection for Secondary Fetches)
 # =============================================================================
 
-def safe_url_fetcher(url):
+def safe_url_fetcher(url, *args, **kwargs):
     """SSRF-safe url_fetcher for WeasyPrint secondary fetches (CSS, images, @import).
 
-    WeasyPrint fetches external resources referenced in HTML (<link>, <img>, CSS @import).
-    This wrapper calls validate_url_for_ssrf on every URL before WeasyPrint fetches it,
-    preventing SSRF via CVE-2025-68616 redirect bypass pattern.
+    http(s) resources go through guarded_get_sync, so redirects are checked
+    hop by hop (WeasyPrint's own fetcher follows them unchecked). data: URIs
+    carry their content inline and touch no network. Every other scheme
+    (file:, ftp:, ...) is refused.
     """
-    validate_url_for_ssrf(url)
-    return default_url_fetcher(url)
+    scheme = urlparse(url).scheme.lower()
+    if scheme == "data":
+        return default_url_fetcher(url, *args, **kwargs)
+    if scheme not in ("http", "https"):
+        raise ValueError(f"Scheme '{scheme}' not allowed; only http/https accepted")
+    body, content_type, final_url = guarded_get_sync(url)
+    return URLFetcherResponse(
+        url=final_url,
+        body=body,
+        headers={"Content-Type": content_type or "application/octet-stream"},
+    )
 
 
 # =============================================================================
@@ -401,7 +493,16 @@ class SSRFMiddleware(BaseHTTPMiddleware):
                 body = json.loads(body_bytes)
                 url = body.get("url", "")
                 if url:
-                    validate_url_for_ssrf(str(url))
+                    # Same check, on the same normalised string, that
+                    # download_file applies; a URL pydantic would reject
+                    # is left for it to reject downstream.
+                    try:
+                        normalised = str(Url(str(url)))
+                    except Exception:
+                        normalised = None
+                    if normalised is not None:
+                        _check_fetch_url(str(url))
+                        _check_fetch_url(normalised)
             except ValueError as e:
                 # Only reject on genuine SSRF validation failures, not JSON parse errors
                 if isinstance(e, json.JSONDecodeError):
@@ -648,7 +749,8 @@ async def convert(request: Request, body: ConvertRequest):
             "success": False,
             "type": body.type,
             "error": "download_error",
-            "detail": str(e),
+            # Transport errors name hosts and ports; they stay in the log.
+            "detail": "The source URL could not be downloaded.",
             "warnings": [],
         }
 
