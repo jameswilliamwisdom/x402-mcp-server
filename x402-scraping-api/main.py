@@ -34,7 +34,7 @@ from x402.mechanisms.evm.exact import ExactEvmServerScheme
 from x402.schemas import Network
 from x402.server import x402ResourceServer
 
-from playwright.async_api import async_playwright, Browser
+from playwright.async_api import async_playwright, Browser, Error as PlaywrightError
 
 import trafilatura
 from bs4 import BeautifulSoup
@@ -188,38 +188,120 @@ def validate_url_for_ssrf(url: str) -> None:
 
 
 # =============================================================================
-# Playwright Route Handlers
+# Playwright Request Guard
 # =============================================================================
+#
+# validate_url_for_ssrf() on the caller's URL is not enough: the browser
+# follows redirects, loads subresources and runs page scripts. The previous
+# "redirect-chain" route handler never saw redirects, because Playwright
+# does not call route handlers for redirect hops, so a public URL that
+# redirected to an internal address was scraped and its HTML returned
+# (security review 2026-11-18). Every scrape now applies three layers:
+#
+#   1. Each request is checked before it is sent (_guard_route).
+#      Navigations and non-GET requests are fetched with redirects disabled
+#      and each Location is checked before it is followed.
+#   2. Plain GET subresources are left to the browser, so their redirect
+#      hops are checked after the fact: by URL (_watch_request) and by the
+#      peer address each response came from (_watch_response, which also
+#      catches DNS that changed after the check). If either trips, the
+#      scrape is refused and no content is returned.
+#   3. Service workers are blocked (context option) and websockets aborted.
 
 BLOCKED_RESOURCE_TYPES = {"image", "media", "font", "websocket"}
+MAX_REDIRECTS = 5
+_LOCAL_SCHEMES = {"data", "blob", "about"}
+_REDIRECT_STATUSES = {301, 302, 303, 307, 308}
+SSRF_BLOCKED_DETAIL = "SSRF validation failed: the page is or leads to a blocked address"
 
 
-async def handle_route(route):
-    """Block non-content resource types to save memory and reduce load time.
-
-    Does NOT block 'script' — required for JS rendering (SCRAPE-02, SCRAPE-03).
-    Registered on context (not page) to avoid memory leaks.
-    """
-    if route.request.resource_type in BLOCKED_RESOURCE_TYPES:
-        await route.abort()
-    else:
-        await route.continue_()
+class NavigationBlocked(Exception):
+    """The scrape touched, or tried to touch, a disallowed address."""
 
 
-async def abort_private_navigation(route):
-    """Abort document-level navigations to private IPs (redirect-chain SSRF protection).
+def _server_addr_is_public(addr: Optional[dict]) -> bool:
+    """True if a response's peer address is public (or unknown)."""
+    if not addr or not addr.get("ipAddress"):
+        return True
+    try:
+        _assert_ip_public(ipaddress.ip_address(addr["ipAddress"].split("%")[0].strip("[]")))
+    except ValueError:
+        return False
+    return True
 
-    Pre-flight SSRF check validates the input URL only. This handler catches
-    redirect chains that land on private IPs after payment has been accepted.
-    Registered on context (not page) to avoid memory leaks.
-    """
-    if route.request.resource_type == "document":
+
+async def _blocked_reason(url: str, cache: dict) -> Optional[str]:
+    """None if the URL may be requested, else why not. Cached per host for
+    the life of one scrape so each host is resolved once."""
+    parsed = urlparse(url)
+    if parsed.scheme in _LOCAL_SCHEMES:
+        return None
+    key = (parsed.scheme, (parsed.hostname or "").lower(), parsed.port)
+    if key not in cache:
         try:
-            validate_url_for_ssrf(route.request.url)
-        except ValueError:
+            await asyncio.to_thread(validate_url_for_ssrf, url)
+            cache[key] = None
+        except ValueError as e:
+            cache[key] = str(e)
+    return cache[key]
+
+
+def _make_guard(state: dict, host_cache: dict):
+    """Build the per-scrape route handler. `state` carries what happened to
+    the main-frame navigation back to scrape_page."""
+
+    async def _guard_route(route):
+        request = route.request
+        if request.resource_type in BLOCKED_RESOURCE_TYPES:
+            # Not needed for content extraction; saves memory and load time.
+            return await route.abort()
+        is_navigation = request.is_navigation_request()
+        try:
+            is_main_frame = is_navigation and request.frame.parent_frame is None
+        except PlaywrightError:
+            is_main_frame = is_navigation
+        current = request.url
+        method = request.method
+        try:
+            for _ in range(MAX_REDIRECTS + 1):
+                reason = await _blocked_reason(current, host_cache)
+                if reason:
+                    if is_main_frame:
+                        state["blocked"] = reason
+                    return await route.abort("blockedbyclient")
+                if urlparse(current).scheme in _LOCAL_SCHEMES:
+                    return await route.continue_()
+                if not is_navigation and method in ("GET", "HEAD"):
+                    return await route.continue_()
+                response = await route.fetch(
+                    url=current, method=method, max_redirects=0,
+                    timeout=int(TOTAL_BUDGET_S * 1000),
+                )
+                location = response.headers.get("location")
+                if response.status not in _REDIRECT_STATUSES or not location:
+                    return await route.fulfill(response=response)
+                current = urljoin(current, location)
+                if is_main_frame:
+                    # Hand the hop back to scrape_page so the page's URL
+                    # (final_url, relative links) follows the redirect.
+                    reason = await _blocked_reason(current, host_cache)
+                    if reason:
+                        state["blocked"] = reason
+                    else:
+                        state["redirect_to"] = current
+                    return await route.abort("aborted")
+                if response.status in (301, 302, 303):
+                    method = "GET"
+            if is_main_frame:
+                state["blocked"] = "too many redirects"
             await route.abort("blockedbyclient")
-            return
-    await route.continue_()
+        except PlaywrightError:
+            try:
+                await route.abort("failed")
+            except PlaywrightError:
+                pass
+
+    return _guard_route
 
 
 # =============================================================================
@@ -492,7 +574,7 @@ async def run_bfs_crawl(
         except Exception as e:
             results.append({
                 "success": False, "url": url, "depth": depth,
-                "error": "scrape_error", "detail": str(e), "warnings": [],
+                "error": "scrape_error", "detail": "The page could not be loaded.", "warnings": [],
             })
             pages_skipped += 1
             reasons_skipped.append("scrape_error")
@@ -724,18 +806,57 @@ async def scrape_page(url: str, wait_for: Optional[str]) -> dict:
         },
     )
 
-    # Register route blocking BEFORE creating page (must be active before goto)
-    await context.route("**/*", handle_route)
-    # Register redirect-chain SSRF intercept on context (not page — avoids memory leak)
-    await context.route("**/*", abort_private_navigation)
+    host_cache: dict = {}
+    state = {"blocked": None, "redirect_to": None, "tainted": None}
+    addr_checks: list = []
+
+    async def _check_addr(response):
+        try:
+            addr = await response.server_addr()
+        except PlaywrightError:
+            return
+        if not _server_addr_is_public(addr):
+            state["tainted"] = "a response was served from a non-public address"
+
+    async def _check_hop(request):
+        if await _blocked_reason(request.url, host_cache):
+            state["tainted"] = "a request was redirected to a blocked address"
+
+    def _watch_response(response):
+        addr_checks.append(asyncio.ensure_future(_check_addr(response)))
+
+    def _watch_request(request):
+        if request.redirected_from is not None:
+            addr_checks.append(asyncio.ensure_future(_check_hop(request)))
+
+    # One handler, registered on the context BEFORE creating the page (must
+    # be active before goto; context-level avoids a per-page leak).
+    await context.route("**/*", _make_guard(state, host_cache))
 
     try:
         page = await context.new_page()
+        page.on("response", _watch_response)
+        page.on("request", _watch_request)
 
-        # Allocate remaining budget to page.goto()
-        elapsed = time.monotonic() - start
-        goto_timeout = max(1000, int((TOTAL_BUDGET_S - elapsed) * 1000))
-        response = await page.goto(url, wait_until="domcontentloaded", timeout=goto_timeout)
+        # goto() shares the budget across redirect hops.
+        target = url
+        response = None
+        for _ in range(MAX_REDIRECTS + 1):
+            state["redirect_to"] = None
+            elapsed = time.monotonic() - start
+            goto_timeout = max(1000, int((TOTAL_BUDGET_S - elapsed) * 1000))
+            try:
+                response = await page.goto(target, wait_until="domcontentloaded", timeout=goto_timeout)
+                break
+            except PlaywrightError:
+                if state["blocked"]:
+                    raise HTTPException(status_code=400, detail=SSRF_BLOCKED_DETAIL) from None
+                if state["redirect_to"]:
+                    target = state["redirect_to"]
+                    continue
+                raise
+        else:
+            raise HTTPException(status_code=400, detail=SSRF_BLOCKED_DETAIL)
 
         status_code = response.status if response else None
 
@@ -747,6 +868,13 @@ async def scrape_page(url: str, wait_for: Optional[str]) -> dict:
 
         html = await page.content()
         final_url = page.url
+
+        # Nothing is returned if any part of the load touched a blocked
+        # address, or if the page ended up somewhere it may not be.
+        if addr_checks:
+            await asyncio.gather(*addr_checks, return_exceptions=True)
+        if state["tainted"] or await _blocked_reason(final_url, host_cache):
+            raise HTTPException(status_code=400, detail=SSRF_BLOCKED_DETAIL)
 
         # Sanitize final_url — data: / blob: URLs are not useful to callers
         extra_warnings = []
@@ -763,6 +891,8 @@ async def scrape_page(url: str, wait_for: Optional[str]) -> dict:
         }
 
     finally:
+        for task in addr_checks:
+            task.cancel()
         await context.close()  # Always close context; NEVER close browser
 
 
@@ -971,7 +1101,8 @@ async def scrape(request: Request, body: ScrapeRequest):
             "success": False,
             "url": input_url,
             "error": "browser_error",
-            "detail": str(e),
+            # Browser error text names hosts and ports; it stays in the log.
+            "detail": "The page could not be loaded.",
             "warnings": [],
         }
 
