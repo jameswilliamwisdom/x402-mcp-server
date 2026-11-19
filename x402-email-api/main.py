@@ -19,7 +19,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from x402.http import FacilitatorConfig, HTTPFacilitatorClient, PaymentOption
 from x402.http.middleware.fastapi import PaymentMiddlewareASGI
@@ -134,6 +134,66 @@ def check_and_increment_domain_limit(wallet, to_address: str) -> None:
 
 
 # =============================================================================
+# Recipient and Volume Caps (security review 2026-11-18)
+# =============================================================================
+# This service sends caller-written mail from our own domain for one cent,
+# so its limits are what stand between it and being a spam relay. Before
+# this section: cc/bcc were unbounded (one paid call could carry as many
+# recipients as Resend accepts), the per-wallet limit counted messages
+# rather than recipients, a fresh wallet reset everything, and a request
+# whose payer could not be read skipped every limit.
+
+MAX_RECIPIENTS_PER_MESSAGE = 5            # to + cc + bcc, distinct addresses
+MAX_ATTACHMENTS = 5
+MAX_TOTAL_ATTACHMENT_BYTES = 25 * 1024 * 1024    # all attachments, decoded
+MAX_REQUEST_BYTES = 36 * 1024 * 1024      # 25MB of attachments as base64, plus the rest
+DAILY_RECIPIENT_LIMIT_PER_WALLET = 20
+# Ceiling across ALL wallets. New wallets are free, so this is the only cap
+# that rotation cannot get around. Held in memory, like the other counters:
+# it resets on deploy, which only ever loosens it for that day.
+GLOBAL_DAILY_RECIPIENT_LIMIT = int(os.getenv("GLOBAL_DAILY_RECIPIENT_LIMIT", "200"))
+
+_wallet_recipient_counts: dict = {}       # {wallet: (count, date)}
+_global_recipient_count = [0, None]       # [count, date]
+
+
+def reserve_recipients(wallet: str, n: int) -> None:
+    """Check the per-wallet and global recipient budgets and take `n` from
+    both, atomically. Raises HTTP 429 without taking anything if either
+    would be exceeded."""
+    today = date.today()
+    with _wallet_lock:
+        wallet_count, wallet_day = _wallet_recipient_counts.get(wallet, (0, today))
+        if wallet_day != today:
+            wallet_count = 0
+        global_count = _global_recipient_count[0] if _global_recipient_count[1] == today else 0
+        if wallet_count + n > DAILY_RECIPIENT_LIMIT_PER_WALLET:
+            raise HTTPException(
+                status_code=429,
+                detail={
+                    "error": "wallet_recipient_limit_exceeded",
+                    "limit": DAILY_RECIPIENT_LIMIT_PER_WALLET,
+                    "resets": "midnight UTC",
+                },
+            )
+        if global_count + n > GLOBAL_DAILY_RECIPIENT_LIMIT:
+            logger.warning("global daily recipient limit reached (%d)", GLOBAL_DAILY_RECIPIENT_LIMIT)
+            raise HTTPException(
+                status_code=429,
+                detail={"error": "service_daily_limit_reached", "resets": "midnight UTC"},
+            )
+        _wallet_recipient_counts[wallet] = (wallet_count + n, today)
+        _global_recipient_count[0] = global_count + n
+        _global_recipient_count[1] = today
+
+
+def _decoded_size(b64: str) -> int:
+    """Decoded length of a base64 string, without decoding it again."""
+    stripped = b64.rstrip("=")
+    return (len(stripped) * 3) // 4
+
+
+# =============================================================================
 # PII-Safe Send Event Logging
 # =============================================================================
 
@@ -212,6 +272,27 @@ class EmailRequest(BaseModel):
         None,
         description="Base64-encoded file attachments (25MB pre-encoding cap per file)"
     )
+
+    def recipients(self) -> List[str]:
+        """Every distinct address this message goes to (to + cc + bcc)."""
+        seen: dict = {}
+        for addr in [self.to, *(self.cc or []), *(self.bcc or [])]:
+            seen.setdefault(str(addr).lower(), str(addr))
+        return list(seen.values())
+
+    @model_validator(mode="after")
+    def enforce_caps(self):
+        if len(self.recipients()) > MAX_RECIPIENTS_PER_MESSAGE:
+            raise ValueError(
+                f"too many recipients: to + cc + bcc may total at most "
+                f"{MAX_RECIPIENTS_PER_MESSAGE} addresses"
+            )
+        attachments = self.attachments or []
+        if len(attachments) > MAX_ATTACHMENTS:
+            raise ValueError(f"too many attachments: at most {MAX_ATTACHMENTS} per message")
+        if sum(_decoded_size(a.content) for a in attachments) > MAX_TOTAL_ATTACHMENT_BYTES:
+            raise ValueError("attachments exceed 25MB in total")
+        return self
 
 
 # =============================================================================
@@ -364,6 +445,32 @@ app.add_middleware(
 # The only outbound call is to api.resend.com, a trusted third-party.
 
 
+class RequestSizeLimit:
+    """Pure ASGI middleware: refuse an oversized or unsized POST /send before
+    the body is read (and before payment). Without it the whole JSON body,
+    attachments included, was parsed into memory before any size check ran.
+    The server rejects a body that does not match its declared length, so
+    Content-Length can be relied on."""
+
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope["type"] != "http" or scope["method"] != "POST" or scope.get("path") != "/send":
+            return await self.app(scope, receive, send)
+        declared = dict(scope["headers"]).get(b"content-length", b"").decode("latin-1")
+        if not declared.isdigit():
+            status, detail = 411, "Content-Length required"
+        elif int(declared) > MAX_REQUEST_BYTES:
+            status, detail = 413, "Request too large."
+        else:
+            return await self.app(scope, receive, send)
+        await JSONResponse(status_code=status, content={"detail": detail})(scope, receive, send)
+
+
+app.add_middleware(RequestSizeLimit)
+
+
 # =============================================================================
 # Rate Limiter Setup (slowapi — for free test endpoint)
 # =============================================================================
@@ -513,13 +620,17 @@ def send_email(request: Request, body: EmailRequest):
     FastAPI auto-routes sync handlers to thread pool, preventing event-loop blocking.
     """
     wallet = get_wallet_address(request)
+    if wallet is None:
+        # The payment middleware verified a payment to get here, so the
+        # payer is always known. If it cannot be read (an SDK change in how
+        # the payment is exposed), every per-wallet limit below would
+        # silently switch off. Refuse instead; a 5xx is not settled.
+        logger.error("paid /send reached without a readable payer wallet; refusing")
+        raise HTTPException(status_code=500, detail="Payment state unavailable.")
+    all_recipients = body.recipients()
     check_and_increment_wallet_limit(wallet)
+    reserve_recipients(wallet, len(all_recipients))
     # Rate-limit all recipients — to + cc + bcc (Pitfall #4: CC/BCC bypass)
-    all_recipients = [str(body.to)]
-    if body.cc:
-        all_recipients.extend(str(addr) for addr in body.cc)
-    if body.bcc:
-        all_recipients.extend(str(addr) for addr in body.bcc)
     for recipient in all_recipients:
         check_and_increment_domain_limit(wallet, recipient)
     result = _do_send(body)
